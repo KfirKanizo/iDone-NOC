@@ -89,7 +89,7 @@ def process_escalation_step(self, incident_id: str):
         db.add(log_entry)
         db.commit()
         
-        from app.celery_app import celery_app
+        from app.celery_app import app as celery_app
         celery_app.send_task(
             "app.tasks.escalation_tasks.evaluate_retry_or_escalate",
             args=[str(incident_id)],
