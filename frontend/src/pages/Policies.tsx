@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { getClients, getContacts, getPolicies, createPolicy } from '../api/client';
-import { Plus } from 'lucide-react';
+import Layout from '../components/Layout';
+import { Plus, FileText, Clock, ArrowRight, X } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -23,6 +23,15 @@ interface Policy {
   tts_message_template: string;
   is_active: boolean;
 }
+
+const escalationLevels = [
+  { level: 0, label: 'Level 0', description: 'Initial notification', color: 'bg-blue-500' },
+  { level: 1, label: 'Level 1', description: 'First escalation', color: 'bg-indigo-500' },
+  { level: 2, label: 'Level 2', description: 'Second escalation', color: 'bg-purple-500' },
+  { level: 3, label: 'Level 3', description: 'Third escalation', color: 'bg-pink-500' },
+  { level: 4, label: 'Level 4', description: 'Fourth escalation', color: 'bg-rose-500' },
+  { level: 5, label: 'Level 5', description: 'Final escalation', color: 'bg-red-600' },
+];
 
 export default function Policies() {
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -119,92 +128,112 @@ export default function Policies() {
 
   const clientContacts = contacts.filter(c => c.client_id === selectedClient);
 
-  const LevelSelect = ({ level }: { level: number }) => (
-    <select
-      value={newPolicy[`level_${level}_contact_id` as keyof typeof newPolicy] as string}
-      onChange={(e) => setNewPolicy({ ...newPolicy, [`level_${level}_contact_id`]: e.target.value })}
-      className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      <option value="">Select contact</option>
-      {clientContacts.map(contact => (
-        <option key={contact.id} value={contact.id}>{contact.full_name}</option>
-      ))}
-    </select>
-  );
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 px-6 py-4">
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-slate-800">NOC Platform</h1>
-          <div className="flex gap-4">
-            <Link to="/dashboard" className="text-slate-600 hover:underline">Incidents</Link>
-            <Link to="/clients" className="text-slate-600 hover:underline">Clients</Link>
-            <Link to="/contacts" className="text-slate-600 hover:underline">Contacts</Link>
-            <Link to="/policies" className="text-blue-600 hover:underline">Policies</Link>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Escalation Policies</h1>
+            <p className="text-sm text-slate-500 mt-1">Configure incident escalation workflows</p>
           </div>
-        </div>
-      </nav>
-
-      <main className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">Escalation Policies</h2>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+            className="btn-primary"
           >
-            <Plus className="w-4 h-4" /> Create Policy
+            <Plus className="w-4 h-4" />
+            Create Policy
           </button>
         </div>
 
-        {loading ? (
-          <div className="text-center py-8 text-slate-500">Loading...</div>
-        ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Client</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Retries</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Delay</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {policies.map((policy) => (
-                  <tr key={policy.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-800">{policy.name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{getClientName(policy.client_id)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{policy.max_retries_per_level}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{policy.retry_delay_seconds}s</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${policy.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {policy.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
+        {/* Policies Table */}
+        <div className="card overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-slate-500">
+              <FileText className="w-5 h-5 animate-spin mr-2" />
+              Loading policies...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="table-header">Name</th>
+                    <th className="table-header">Client</th>
+                    <th className="table-header">Retries</th>
+                    <th className="table-header">Delay</th>
+                    <th className="table-header">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {policies.length === 0 && (
-              <div className="text-center py-8 text-slate-500">No policies found</div>
-            )}
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {policies.map((policy) => (
+                    <tr key={policy.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="table-cell">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-primary-600" />
+                          </div>
+                          <span className="font-medium text-slate-900">{policy.name}</span>
+                        </div>
+                      </td>
+                      <td className="table-cell">{getClientName(policy.client_id)}</td>
+                      <td className="table-cell">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <RefreshCw className="w-4 h-4" />
+                          {policy.max_retries_per_level}
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <Clock className="w-4 h-4" />
+                          {policy.retry_delay_seconds}s
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <span className={policy.is_active ? 'badge-success' : 'badge-neutral'}>
+                          {policy.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {policies.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                  <FileText className="w-8 h-8 mb-2 text-slate-300" />
+                  <p>No policies found</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
+        {/* Create Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 my-8">
-              <h3 className="font-bold text-lg mb-4">Create Escalation Policy</h3>
-              <form onSubmit={handleCreate} className="space-y-4">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Create Escalation Policy</h3>
+                  <p className="text-sm text-slate-500">Define how incidents should be escalated</p>
+                </div>
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleCreate} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Client</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Client</label>
                     <select
                       value={selectedClient}
                       onChange={(e) => setSelectedClient(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="select-field"
                       required
                     >
                       {clients.map(client => (
@@ -213,12 +242,13 @@ export default function Policies() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Policy Name</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Policy Name</label>
                     <input
                       type="text"
                       value={newPolicy.name}
                       onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="input-field"
+                      placeholder="e.g., Critical Alert Policy"
                       required
                     />
                   </div>
@@ -226,66 +256,105 @@ export default function Policies() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Max Retries per Level</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Max Retries per Level</label>
                     <input
                       type="number"
                       min="1"
                       max="10"
                       value={newPolicy.max_retries_per_level}
                       onChange={(e) => setNewPolicy({ ...newPolicy, max_retries_per_level: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="input-field"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Retry Delay (seconds)</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Retry Delay (seconds)</label>
                     <input
                       type="number"
                       min="10"
                       value={newPolicy.retry_delay_seconds}
                       onChange={(e) => setNewPolicy({ ...newPolicy, retry_delay_seconds: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="input-field"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">TTS Message Template</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">TTS Message Template</label>
                   <textarea
                     value={newPolicy.tts_message_template}
                     onChange={(e) => setNewPolicy({ ...newPolicy, tts_message_template: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input-field"
                     rows={2}
                     required
                   />
                   <p className="text-xs text-slate-500 mt-1">Use {'{incident_details}'} as placeholder</p>
                 </div>
 
+                {/* Escalation Flow */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Escalation Contacts</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[0, 1, 2, 3, 4, 5].map(level => (
-                      <div key={level}>
-                        <label className="block text-xs text-slate-500 mb-1">Level {level}</label>
-                        <LevelSelect level={level} />
+                  <label className="block text-sm font-medium text-slate-700 mb-3">Escalation Flow</label>
+                  <div className="space-y-3">
+                    {escalationLevels.map((level, index) => (
+                      <div key={level.level} className="relative">
+                        <div className={`p-4 rounded-lg border-2 transition-all ${level.level === 0 ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                          <div className="flex items-start gap-4">
+                            <div className={`w-10 h-10 rounded-xl ${level.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                              <span className="text-sm font-bold text-white">{level.level}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-semibold text-slate-900">{level.label}</span>
+                                <span className="text-xs text-slate-500">· {level.description}</span>
+                              </div>
+                              <select
+                                value={newPolicy[`level_${level.level}_contact_id` as keyof typeof newPolicy] as string}
+                                onChange={(e) => setNewPolicy({ ...newPolicy, [`level_${level.level}_contact_id`]: e.target.value })}
+                                className="select-field text-sm"
+                              >
+                                <option value="">Select contact (optional)</option>
+                                {clientContacts.map(contact => (
+                                  <option key={contact.id} value={contact.id}>{contact.full_name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        {index < escalationLevels.length - 1 && (
+                          <div className="absolute left-5 -bottom-3 z-10">
+                            <ArrowRight className="w-4 h-4 text-slate-300 rotate-90" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex gap-2 justify-end pt-4">
+                <div className="flex items-center gap-3 pt-2">
+                  <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors flex-1">
+                    <input
+                      type="checkbox"
+                      checked={newPolicy.is_active}
+                      onChange={(e) => setNewPolicy({ ...newPolicy, is_active: e.target.checked })}
+                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-slate-700">Active</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => setShowForm(false)}
-                    className="px-4 py-2 text-slate-600 hover:text-slate-800"
+                    className="btn-secondary flex-1"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                    className="btn-primary flex-1"
                   >
                     {submitting ? 'Creating...' : 'Create Policy'}
                   </button>
@@ -294,7 +363,18 @@ export default function Policies() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </Layout>
+  );
+}
+
+function RefreshCw({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
+    </svg>
   );
 }

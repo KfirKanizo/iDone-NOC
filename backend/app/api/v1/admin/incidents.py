@@ -55,7 +55,19 @@ def list_incidents(
         query = query.filter(Incident.status == status)
     
     incidents = query.order_by(Incident.created_at.desc()).offset(offset).limit(limit).all()
-    return incidents
+    return [
+        IncidentResponse(
+            id=str(i.id),
+            client_id=str(i.client_id),
+            policy_id=str(i.policy_id) if i.policy_id else None,
+            payload=i.payload,
+            status=i.status.value,
+            current_escalation_level=i.current_escalation_level,
+            current_retry_count=i.current_retry_count,
+            acknowledged_by=str(i.acknowledged_by) if i.acknowledged_by else None,
+            created_at=i.created_at,
+        ) for i in incidents
+    ]
 
 
 @router.get("/{incident_id}", response_model=IncidentResponse)

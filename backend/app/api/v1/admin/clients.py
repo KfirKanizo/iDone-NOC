@@ -37,7 +37,13 @@ def list_clients(
     admin: dict = Depends(get_current_admin),
 ):
     clients = db.query(Client).all()
-    return clients
+    return [
+        ClientResponse(
+            id=str(c.id),
+            company_name=c.company_name,
+            is_active=c.is_active,
+        ) for c in clients
+    ]
 
 
 @router.post("", response_model=ClientResponse)

@@ -48,7 +48,16 @@ def list_contacts(
     if client_id:
         query = query.filter(Contact.client_id == uuid.UUID(client_id))
     contacts = query.all()
-    return contacts
+    return [
+        ContactResponse(
+            id=str(c.id),
+            client_id=str(c.client_id),
+            full_name=c.full_name,
+            email=c.email,
+            phone_number=c.phone_number,
+            is_active=c.is_active,
+        ) for c in contacts
+    ]
 
 
 @router.post("", response_model=ContactResponse)

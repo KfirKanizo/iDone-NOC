@@ -69,7 +69,23 @@ def list_policies(
     if client_id:
         query = query.filter(EscalationPolicy.client_id == uuid.UUID(client_id))
     policies = query.all()
-    return policies
+    return [
+        PolicyResponse(
+            id=str(p.id),
+            client_id=str(p.client_id),
+            name=p.name,
+            max_retries_per_level=p.max_retries_per_level,
+            retry_delay_seconds=p.retry_delay_seconds,
+            tts_message_template=p.tts_message_template,
+            level_0_contact_id=str(p.level_0_contact_id) if p.level_0_contact_id else None,
+            level_1_contact_id=str(p.level_1_contact_id) if p.level_1_contact_id else None,
+            level_2_contact_id=str(p.level_2_contact_id) if p.level_2_contact_id else None,
+            level_3_contact_id=str(p.level_3_contact_id) if p.level_3_contact_id else None,
+            level_4_contact_id=str(p.level_4_contact_id) if p.level_4_contact_id else None,
+            level_5_contact_id=str(p.level_5_contact_id) if p.level_5_contact_id else None,
+            is_active=p.is_active,
+        ) for p in policies
+    ]
 
 
 @router.post("", response_model=PolicyResponse)

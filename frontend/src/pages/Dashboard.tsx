@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getIncidents, getIncidentLogs } from '../api/client';
-import { Eye } from 'lucide-react';
+import { getIncidents, getIncidentLogs, getClients } from '../api/client';
+import Layout from '../components/Layout';
+import { Eye, AlertTriangle, CheckCircle, Clock, Users, Activity } from 'lucide-react';
 
 interface Incident {
   id: string;
@@ -22,30 +22,35 @@ interface IncidentLog {
   created_at: string;
 }
 
-const statusColors: Record<string, string> = {
-  OPEN: 'bg-red-100 text-red-800',
-  ACKNOWLEDGED: 'bg-yellow-100 text-yellow-800',
-  RESOLVED: 'bg-green-100 text-green-800',
-  FAILED_ESCALATION: 'bg-gray-100 text-gray-800',
+const statusConfig: Record<string, { label: string; className: string }> = {
+  OPEN: { label: 'Open', className: 'badge-danger' },
+  ACKNOWLEDGED: { label: 'Acknowledged', className: 'badge-warning' },
+  RESOLVED: { label: 'Resolved', className: 'badge-success' },
+  FAILED_ESCALATION: { label: 'Failed', className: 'badge-neutral' },
 };
 
 export default function Dashboard() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [logs, setLogs] = useState<IncidentLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
   useEffect(() => {
-    loadIncidents();
+    loadData();
   }, []);
 
-  const loadIncidents = async () => {
+  const loadData = async () => {
     try {
-      const data = await getIncidents({ limit: 50 });
-      setIncidents(data);
+      const [incidentsData, clientsData] = await Promise.all([
+        getIncidents({ limit: 50 }),
+        getClients(),
+      ]);
+      setIncidents(incidentsData);
+      setClients(clientsData);
     } catch (err) {
-      console.error('Failed to load incidents', err);
+      console.error('Failed to load data', err);
     } finally {
       setLoading(false);
     }
@@ -64,103 +69,164 @@ export default function Dashboard() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-slate-800">NOC Platform</h1>
-          <div className="flex gap-4">
-            <Link to="/dashboard" className="text-blue-600 hover:underline">Incidents</Link>
-            <Link to="/clients" className="text-slate-600 hover:underline">Clients</Link>
-            <Link to="/contacts" className="text-slate-600 hover:underline">Contacts</Link>
-            <Link to="/policies" className="text-slate-600 hover:underline">Policies</Link>
-          </div>
+  const openCount = incidents.filter(i => i.status === 'OPEN').length;
+  const acknowledgedCount = incidents.filter(i => i.status === 'ACKNOWLEDGED').length;
+  const resolvedCount = incidents.filter(i => i.status === 'RESOLVED').length;
+
+  const getClientName = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    return client?.company_name || clientId.slice(0, 8);
+  };
+
+  const StatCard = ({ title, value, icon: Icon, color }: { title: string; value: number | string; icon: React.ElementType; color: string }) => (
+    <div className="card p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
         </div>
-      </nav>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+          <Icon className="w-6 h-6" />
+        </div>
+      </div>
+    </div>
+  );
 
-      <main className="p-6">
-        <h2 className="text-2xl font-bold text-slate-800 mb-6">Incidents</h2>
-        
-        {loading ? (
-          <div className="text-center py-8 text-slate-500">Loading...</div>
-        ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Details</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Level</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Retries</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Created</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {incidents.map((incident) => (
-                  <tr key={incident.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[incident.status] || 'bg-gray-100'}`}>
-                        {incident.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 font-mono">{incident.id.slice(0, 8)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{incident.payload?.details || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{incident.current_escalation_level}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{incident.current_retry_count}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      {new Date(incident.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => viewLogs(incident)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {incidents.length === 0 && (
-              <div className="text-center py-8 text-slate-500">No incidents found</div>
-            )}
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Incidents Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">Monitor and manage all system incidents</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Active Incidents" value={openCount} icon={AlertTriangle} color="bg-red-100 text-red-600" />
+          <StatCard title="Acknowledged" value={acknowledgedCount} icon={Clock} color="bg-amber-100 text-amber-600" />
+          <StatCard title="Resolved" value={resolvedCount} icon={CheckCircle} color="bg-emerald-100 text-emerald-600" />
+          <StatCard title="Total Clients" value={clients.length} icon={Users} color="bg-primary-100 text-primary-600" />
+        </div>
+
+        {/* Incidents Table */}
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Recent Incidents</h2>
+            <span className="text-sm text-slate-500">{incidents.length} total</span>
           </div>
-        )}
-
-        {selectedIncident && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-              <div className="p-4 border-b flex justify-between items-center">
-                <h3 className="font-bold text-lg">Incident {selectedIncident.id.slice(0, 8)} Logs</h3>
-                <button onClick={() => setSelectedIncident(null)} className="text-slate-500 hover:text-slate-700">✕</button>
+          
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Activity className="w-5 h-5 animate-spin" />
+                <span>Loading incidents...</span>
               </div>
-              <div className="p-4">
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="table-header">Status</th>
+                    <th className="table-header">Client</th>
+                    <th className="table-header">Details</th>
+                    <th className="table-header">Level</th>
+                    <th className="table-header">Retries</th>
+                    <th className="table-header">Created</th>
+                    <th className="table-header">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {incidents.map((incident) => {
+                    const status = statusConfig[incident.status] || { label: incident.status, className: 'badge-neutral' };
+                    return (
+                      <tr key={incident.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="table-cell">
+                          <span className={status.className}>{status.label}</span>
+                        </td>
+                        <td className="table-cell font-medium text-slate-900">{getClientName(incident.client_id)}</td>
+                        <td className="table-cell max-w-xs truncate">{incident.payload?.details || '-'}</td>
+                        <td className="table-cell">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                            L{incident.current_escalation_level}
+                          </span>
+                        </td>
+                        <td className="table-cell">{incident.current_retry_count}</td>
+                        <td className="table-cell text-slate-500">
+                          {new Date(incident.created_at).toLocaleString()}
+                        </td>
+                        <td className="table-cell">
+                          <button
+                            onClick={() => viewLogs(incident)}
+                            className="btn-outline text-xs"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            View Logs
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {incidents.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                  <AlertTriangle className="w-8 h-8 mb-2 text-slate-300" />
+                  <p>No incidents found</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Logs Modal */}
+        {selectedIncident && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Incident Logs</h3>
+                  <p className="text-sm text-slate-500 font-mono mt-0.5">{selectedIncident.id.slice(0, 8)}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedIncident(null)}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
                 {logsLoading ? (
-                  <div className="text-center py-4 text-slate-500">Loading logs...</div>
+                  <div className="flex items-center justify-center py-8">
+                    <Activity className="w-5 h-5 animate-spin text-primary-600" />
+                  </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {logs.map((log) => (
-                      <div key={log.id} className="border-l-2 border-blue-500 pl-3 py-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{log.action_type}</span>
+                      <div key={log.id} className="relative pl-4 pb-4 border-l-2 border-primary-200 last:pb-0">
+                        <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-primary-500" />
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm text-slate-900">{log.action_type}</span>
                           <span className="text-xs text-slate-400">{new Date(log.created_at).toLocaleString()}</span>
                         </div>
-                        <pre className="text-xs text-slate-600 mt-1 bg-slate-50 p-2 rounded">
+                        <pre className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg overflow-x-auto">
                           {JSON.stringify(log.details, null, 2)}
                         </pre>
                       </div>
                     ))}
-                    {logs.length === 0 && <div className="text-slate-500">No logs found</div>}
+                    {logs.length === 0 && (
+                      <p className="text-center text-slate-500 py-4">No logs found for this incident</p>
+                    )}
                   </div>
                 )}
               </div>
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 }
