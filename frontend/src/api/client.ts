@@ -48,6 +48,11 @@ export const updateClient = async (id: string, data: { company_name?: string; is
   return response.data;
 };
 
+export const deleteClient = async (id: string) => {
+  const response = await api.delete(`/api/v1/admin/clients/${id}`);
+  return response.data;
+};
+
 export const regenerateClientKey = async (id: string) => {
   const response = await api.post(`/api/v1/admin/clients/${id}/regenerate-key`);
   return response.data;
@@ -77,6 +82,11 @@ export const updateContact = async (id: string, data: {
   is_active?: boolean;
 }) => {
   const response = await api.put(`/api/v1/admin/contacts/${id}`, data);
+  return response.data;
+};
+
+export const deleteContact = async (id: string) => {
+  const response = await api.delete(`/api/v1/admin/contacts/${id}`);
   return response.data;
 };
 
@@ -118,6 +128,11 @@ export const updatePolicy = async (id: string, data: Partial<{
   is_active: boolean;
 }>) => {
   const response = await api.put(`/api/v1/admin/policies/${id}`, data);
+  return response.data;
+};
+
+export const deletePolicy = async (id: string) => {
+  const response = await api.delete(`/api/v1/admin/policies/${id}`);
   return response.data;
 };
 

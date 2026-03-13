@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastProvider } from './components/Toast';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
@@ -15,44 +16,46 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/clients"
-          element={
-            <PrivateRoute>
-              <Clients />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/contacts"
-          element={
-            <PrivateRoute>
-              <Contacts />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/policies"
-          element={
-            <PrivateRoute>
-              <Policies />
-            </PrivateRoute>
-          }
-        />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <PrivateRoute>
+                <Clients />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/contacts"
+            element={
+              <PrivateRoute>
+                <Contacts />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/policies"
+            element={
+              <PrivateRoute>
+                <Policies />
+              </PrivateRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

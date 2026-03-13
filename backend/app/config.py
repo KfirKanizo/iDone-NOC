@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +11,7 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_PHONE_NUMBER: str = ""
+    TWILIO_MOCK_URL: Optional[str] = None
     BASE_URL: str = "http://localhost:8000"
 
     SMTP_HOST: str = "smtp.gmail.com"

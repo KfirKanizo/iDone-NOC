@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getClients, getContacts, getPolicies, createPolicy } from '../api/client';
+import { getClients, getContacts, getPolicies, createPolicy, updatePolicy, deletePolicy } from '../api/client';
 import Layout from '../components/Layout';
-import { Plus, FileText, Clock, ArrowRight, X } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { Plus, FileText, Clock, ArrowRight, X, Pencil, Trash2, RefreshCw } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -21,6 +22,12 @@ interface Policy {
   max_retries_per_level: number;
   retry_delay_seconds: number;
   tts_message_template: string;
+  level_0_contact_id?: string;
+  level_1_contact_id?: string;
+  level_2_contact_id?: string;
+  level_3_contact_id?: string;
+  level_4_contact_id?: string;
+  level_5_contact_id?: string;
   is_active: boolean;
 }
 
@@ -33,36 +40,43 @@ const escalationLevels = [
   { level: 5, label: 'Level 5', description: 'Final escalation', color: 'bg-red-600' },
 ];
 
+const defaultPolicy = {
+  client_id: '',
+  name: '',
+  max_retries_per_level: 3,
+  retry_delay_seconds: 60,
+  tts_message_template: 'Alert: {incident_details}. Press 1 to take ownership.',
+  level_0_contact_id: '',
+  level_1_contact_id: '',
+  level_2_contact_id: '',
+  level_3_contact_id: '',
+  level_4_contact_id: '',
+  level_5_contact_id: '',
+  is_active: true,
+};
+
 export default function Policies() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
   const [selectedClient, setSelectedClient] = useState('');
-  const [newPolicy, setNewPolicy] = useState({
-    client_id: '',
-    name: '',
-    max_retries_per_level: 3,
-    retry_delay_seconds: 60,
-    tts_message_template: 'Alert: {incident_details}. Press 1 to take ownership.',
-    level_0_contact_id: '',
-    level_1_contact_id: '',
-    level_2_contact_id: '',
-    level_3_contact_id: '',
-    level_4_contact_id: '',
-    level_5_contact_id: '',
-    is_active: true,
-  });
+  const [formData, setFormData] = useState(defaultPolicy);
   const [submitting, setSubmitting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadData();
   }, []);
 
   useEffect(() => {
-    setNewPolicy(prev => ({ ...prev, client_id: selectedClient }));
-  }, [selectedClient]);
+    if (!isEditMode) {
+      setFormData(prev => ({ ...prev, client_id: selectedClient }));
+    }
+  }, [selectedClient, isEditMode]);
 
   const loadData = async () => {
     try {
@@ -84,40 +98,109 @@ export default function Policies() {
     }
   };
 
+  const openCreateModal = () => {
+    setFormData({ ...defaultPolicy, client_id: selectedClient });
+    setEditingPolicy(null);
+    setIsEditMode(false);
+    setShowForm(true);
+  };
+
+  const openEditModal = (policy: Policy) => {
+    setFormData({
+      client_id: policy.client_id,
+      name: policy.name,
+      max_retries_per_level: policy.max_retries_per_level,
+      retry_delay_seconds: policy.retry_delay_seconds,
+      tts_message_template: policy.tts_message_template,
+      level_0_contact_id: policy.level_0_contact_id || '',
+      level_1_contact_id: policy.level_1_contact_id || '',
+      level_2_contact_id: policy.level_2_contact_id || '',
+      level_3_contact_id: policy.level_3_contact_id || '',
+      level_4_contact_id: policy.level_4_contact_id || '',
+      level_5_contact_id: policy.level_5_contact_id || '',
+      is_active: policy.is_active,
+    });
+    setSelectedClient(policy.client_id);
+    setEditingPolicy(policy);
+    setIsEditMode(true);
+    setShowForm(true);
+  };
+
+  const closeModal = () => {
+    setShowForm(false);
+    setIsEditMode(false);
+    setEditingPolicy(null);
+    setFormData({ ...defaultPolicy, client_id: selectedClient });
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
       const policyData = {
-        ...newPolicy,
-        level_0_contact_id: newPolicy.level_0_contact_id || undefined,
-        level_1_contact_id: newPolicy.level_1_contact_id || undefined,
-        level_2_contact_id: newPolicy.level_2_contact_id || undefined,
-        level_3_contact_id: newPolicy.level_3_contact_id || undefined,
-        level_4_contact_id: newPolicy.level_4_contact_id || undefined,
-        level_5_contact_id: newPolicy.level_5_contact_id || undefined,
+        ...formData,
+        level_0_contact_id: formData.level_0_contact_id || undefined,
+        level_1_contact_id: formData.level_1_contact_id || undefined,
+        level_2_contact_id: formData.level_2_contact_id || undefined,
+        level_3_contact_id: formData.level_3_contact_id || undefined,
+        level_4_contact_id: formData.level_4_contact_id || undefined,
+        level_5_contact_id: formData.level_5_contact_id || undefined,
       };
       const created = await createPolicy(policyData);
       setPolicies([...policies, created]);
-      setShowForm(false);
-      setNewPolicy({
-        client_id: selectedClient,
-        name: '',
-        max_retries_per_level: 3,
-        retry_delay_seconds: 60,
-        tts_message_template: 'Alert: {incident_details}. Press 1 to take ownership.',
-        level_0_contact_id: '',
-        level_1_contact_id: '',
-        level_2_contact_id: '',
-        level_3_contact_id: '',
-        level_4_contact_id: '',
-        level_5_contact_id: '',
-        is_active: true,
-      });
+      closeModal();
+      showToast('success', 'Policy created successfully');
     } catch (err) {
       console.error('Failed to create policy', err);
+      showToast('error', 'Failed to create policy');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPolicy) return;
+    setSubmitting(true);
+    try {
+      const policyData = {
+        name: formData.name,
+        max_retries_per_level: formData.max_retries_per_level,
+        retry_delay_seconds: formData.retry_delay_seconds,
+        tts_message_template: formData.tts_message_template,
+        level_0_contact_id: formData.level_0_contact_id || undefined,
+        level_1_contact_id: formData.level_1_contact_id || undefined,
+        level_2_contact_id: formData.level_2_contact_id || undefined,
+        level_3_contact_id: formData.level_3_contact_id || undefined,
+        level_4_contact_id: formData.level_4_contact_id || undefined,
+        level_5_contact_id: formData.level_5_contact_id || undefined,
+        is_active: formData.is_active,
+      };
+      const updated = await updatePolicy(editingPolicy.id, policyData);
+      setPolicies(policies.map(p => p.id === editingPolicy.id ? { ...p, ...updated } : p));
+      closeModal();
+      showToast('success', 'Policy updated successfully');
+    } catch (err) {
+      console.error('Failed to update policy', err);
+      showToast('error', 'Failed to update policy');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this policy? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await deletePolicy(id);
+      setPolicies(policies.filter(p => p.id !== id));
+      showToast('success', 'Policy deleted successfully');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      const message = error.response?.data?.detail || 'Failed to delete policy';
+      console.error('Failed to delete policy', err);
+      showToast('error', message);
     }
   };
 
@@ -137,10 +220,7 @@ export default function Policies() {
             <h1 className="text-2xl font-bold text-slate-900">Escalation Policies</h1>
             <p className="text-sm text-slate-500 mt-1">Configure incident escalation workflows</p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn-primary"
-          >
+          <button onClick={openCreateModal} className="btn-primary">
             <Plus className="w-4 h-4" />
             Create Policy
           </button>
@@ -163,6 +243,7 @@ export default function Policies() {
                     <th className="table-header">Retries</th>
                     <th className="table-header">Delay</th>
                     <th className="table-header">Status</th>
+                    <th className="table-header">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -194,6 +275,24 @@ export default function Policies() {
                           {policy.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
+                      <td className="table-cell">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openEditModal(policy)}
+                            className="btn-ghost text-xs"
+                            title="Edit Policy"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(policy.id)}
+                            className="btn-ghost text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete Policy"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -208,24 +307,28 @@ export default function Policies() {
           )}
         </div>
 
-        {/* Create Modal */}
+        {/* Create/Edit Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">Create Escalation Policy</h3>
-                  <p className="text-sm text-slate-500">Define how incidents should be escalated</p>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    {isEditMode ? 'Edit Escalation Policy' : 'Create Escalation Policy'}
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    {isEditMode ? 'Update the escalation workflow' : 'Define how incidents should be escalated'}
+                  </p>
                 </div>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={closeModal}
                   className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               
-              <form onSubmit={handleCreate} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <form onSubmit={isEditMode ? handleUpdate : handleCreate} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
                 {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -235,6 +338,7 @@ export default function Policies() {
                       onChange={(e) => setSelectedClient(e.target.value)}
                       className="select-field"
                       required
+                      disabled={isEditMode}
                     >
                       {clients.map(client => (
                         <option key={client.id} value={client.id}>{client.company_name}</option>
@@ -245,8 +349,8 @@ export default function Policies() {
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Policy Name</label>
                     <input
                       type="text"
-                      value={newPolicy.name}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="input-field"
                       placeholder="e.g., Critical Alert Policy"
                       required
@@ -261,8 +365,8 @@ export default function Policies() {
                       type="number"
                       min="1"
                       max="10"
-                      value={newPolicy.max_retries_per_level}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, max_retries_per_level: parseInt(e.target.value) })}
+                      value={formData.max_retries_per_level}
+                      onChange={(e) => setFormData({ ...formData, max_retries_per_level: parseInt(e.target.value) })}
                       className="input-field"
                       required
                     />
@@ -272,8 +376,8 @@ export default function Policies() {
                     <input
                       type="number"
                       min="10"
-                      value={newPolicy.retry_delay_seconds}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, retry_delay_seconds: parseInt(e.target.value) })}
+                      value={formData.retry_delay_seconds}
+                      onChange={(e) => setFormData({ ...formData, retry_delay_seconds: parseInt(e.target.value) })}
                       className="input-field"
                       required
                     />
@@ -283,8 +387,8 @@ export default function Policies() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">TTS Message Template</label>
                   <textarea
-                    value={newPolicy.tts_message_template}
-                    onChange={(e) => setNewPolicy({ ...newPolicy, tts_message_template: e.target.value })}
+                    value={formData.tts_message_template}
+                    onChange={(e) => setFormData({ ...formData, tts_message_template: e.target.value })}
                     className="input-field"
                     rows={2}
                     required
@@ -309,8 +413,8 @@ export default function Policies() {
                                 <span className="text-xs text-slate-500">· {level.description}</span>
                               </div>
                               <select
-                                value={newPolicy[`level_${level.level}_contact_id` as keyof typeof newPolicy] as string}
-                                onChange={(e) => setNewPolicy({ ...newPolicy, [`level_${level.level}_contact_id`]: e.target.value })}
+                                value={formData[`level_${level.level}_contact_id` as keyof typeof formData] as string}
+                                onChange={(e) => setFormData({ ...formData, [`level_${level.level}_contact_id`]: e.target.value })}
                                 className="select-field text-sm"
                               >
                                 <option value="">Select contact (optional)</option>
@@ -335,8 +439,8 @@ export default function Policies() {
                   <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors flex-1">
                     <input
                       type="checkbox"
-                      checked={newPolicy.is_active}
-                      onChange={(e) => setNewPolicy({ ...newPolicy, is_active: e.target.checked })}
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                       className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-slate-700">Active</span>
@@ -346,7 +450,7 @@ export default function Policies() {
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={closeModal}
                     className="btn-secondary flex-1"
                   >
                     Cancel
@@ -356,7 +460,7 @@ export default function Policies() {
                     disabled={submitting}
                     className="btn-primary flex-1"
                   >
-                    {submitting ? 'Creating...' : 'Create Policy'}
+                    {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Policy' : 'Create Policy')}
                   </button>
                 </div>
               </form>
@@ -365,16 +469,5 @@ export default function Policies() {
         )}
       </div>
     </Layout>
-  );
-}
-
-function RefreshCw({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-      <path d="M21 3v5h-5" />
-      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-      <path d="M8 16H3v5" />
-    </svg>
   );
 }

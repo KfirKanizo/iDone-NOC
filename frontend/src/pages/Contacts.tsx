@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getClients, getContacts, createContact } from '../api/client';
+import { getClients, getContacts, createContact, updateContact, deleteContact } from '../api/client';
 import Layout from '../components/Layout';
-import { Plus, User, Mail, Phone, X } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { Plus, User, Mail, Phone, X, Pencil, Trash2 } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -22,7 +23,9 @@ export default function Contacts() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [newContact, setNewContact] = useState({
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [formData, setFormData] = useState({
     client_id: '',
     full_name: '',
     email: '',
@@ -30,6 +33,7 @@ export default function Contacts() {
     is_active: true,
   });
   const [submitting, setSubmitting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadData();
@@ -43,8 +47,8 @@ export default function Contacts() {
       ]);
       setContacts(contactsData);
       setClients(clientsData);
-      if (clientsData.length > 0 && !newContact.client_id) {
-        setNewContact(prev => ({ ...prev, client_id: clientsData[0].id }));
+      if (clientsData.length > 0 && !formData.client_id) {
+        setFormData(prev => ({ ...prev, client_id: clientsData[0].id }));
       }
     } catch (err) {
       console.error('Failed to load data', err);
@@ -53,24 +57,91 @@ export default function Contacts() {
     }
   };
 
+  const openCreateModal = () => {
+    setFormData({
+      client_id: clients[0]?.id || '',
+      full_name: '',
+      email: '',
+      phone_number: '',
+      is_active: true,
+    });
+    setEditingContact(null);
+    setIsEditMode(false);
+    setShowForm(true);
+  };
+
+  const openEditModal = (contact: Contact) => {
+    setFormData({
+      client_id: contact.client_id,
+      full_name: contact.full_name,
+      email: contact.email,
+      phone_number: contact.phone_number,
+      is_active: contact.is_active,
+    });
+    setEditingContact(contact);
+    setIsEditMode(true);
+    setShowForm(true);
+  };
+
+  const closeModal = () => {
+    setShowForm(false);
+    setIsEditMode(false);
+    setEditingContact(null);
+    setFormData({
+      client_id: clients[0]?.id || '',
+      full_name: '',
+      email: '',
+      phone_number: '',
+      is_active: true,
+    });
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const created = await createContact(newContact);
+      const created = await createContact(formData);
       setContacts([...contacts, created]);
-      setShowForm(false);
-      setNewContact({
-        client_id: clients[0]?.id || '',
-        full_name: '',
-        email: '',
-        phone_number: '',
-        is_active: true,
-      });
+      closeModal();
+      showToast('success', 'Contact created successfully');
     } catch (err) {
       console.error('Failed to create contact', err);
+      showToast('error', 'Failed to create contact');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingContact) return;
+    setSubmitting(true);
+    try {
+      const updated = await updateContact(editingContact.id, formData);
+      setContacts(contacts.map(c => c.id === editingContact.id ? { ...c, ...updated } : c));
+      closeModal();
+      showToast('success', 'Contact updated successfully');
+    } catch (err) {
+      console.error('Failed to update contact', err);
+      showToast('error', 'Failed to update contact');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await deleteContact(id);
+      setContacts(contacts.filter(c => c.id !== id));
+      showToast('success', 'Contact deleted successfully');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      const message = error.response?.data?.detail || 'Failed to delete contact';
+      console.error('Failed to delete contact', err);
+      showToast('error', message);
     }
   };
 
@@ -88,10 +159,7 @@ export default function Contacts() {
             <h1 className="text-2xl font-bold text-slate-900">Contacts</h1>
             <p className="text-sm text-slate-500 mt-1">Manage escalation contacts for your clients</p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn-primary"
-          >
+          <button onClick={openCreateModal} className="btn-primary">
             <Plus className="w-4 h-4" />
             Add Contact
           </button>
@@ -114,6 +182,7 @@ export default function Contacts() {
                     <th className="table-header">Email</th>
                     <th className="table-header">Phone</th>
                     <th className="table-header">Status</th>
+                    <th className="table-header">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -145,6 +214,24 @@ export default function Contacts() {
                           {contact.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
+                      <td className="table-cell">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openEditModal(contact)}
+                            className="btn-ghost text-xs"
+                            title="Edit Contact"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(contact.id)}
+                            className="btn-ghost text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete Contact"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -159,25 +246,27 @@ export default function Contacts() {
           )}
         </div>
 
-        {/* Create Modal */}
+        {/* Create/Edit Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Create Contact</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {isEditMode ? 'Edit Contact' : 'Create Contact'}
+                </h3>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={closeModal}
                   className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <form onSubmit={isEditMode ? handleUpdate : handleCreate} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Client</label>
                   <select
-                    value={newContact.client_id}
-                    onChange={(e) => setNewContact({ ...newContact, client_id: e.target.value })}
+                    value={formData.client_id}
+                    onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
                     className="select-field"
                     required
                   >
@@ -191,8 +280,8 @@ export default function Contacts() {
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
                   <input
                     type="text"
-                    value={newContact.full_name}
-                    onChange={(e) => setNewContact({ ...newContact, full_name: e.target.value })}
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     className="input-field"
                     placeholder="Enter full name"
                     required
@@ -202,8 +291,8 @@ export default function Contacts() {
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
                   <input
                     type="email"
-                    value={newContact.email}
-                    onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="input-field"
                     placeholder="email@example.com"
                     required
@@ -213,8 +302,8 @@ export default function Contacts() {
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone Number (E.164)</label>
                   <input
                     type="text"
-                    value={newContact.phone_number}
-                    onChange={(e) => setNewContact({ ...newContact, phone_number: e.target.value })}
+                    value={formData.phone_number}
+                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                     placeholder="+1234567890"
                     className="input-field"
                     required
@@ -224,8 +313,8 @@ export default function Contacts() {
                   <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
                     <input
                       type="checkbox"
-                      checked={newContact.is_active}
-                      onChange={(e) => setNewContact({ ...newContact, is_active: e.target.checked })}
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                       className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-slate-700">Active</span>
@@ -234,7 +323,7 @@ export default function Contacts() {
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={closeModal}
                     className="btn-secondary flex-1"
                   >
                     Cancel
@@ -244,7 +333,7 @@ export default function Contacts() {
                     disabled={submitting}
                     className="btn-primary flex-1"
                   >
-                    {submitting ? 'Creating...' : 'Create Contact'}
+                    {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Contact' : 'Create Contact')}
                   </button>
                 </div>
               </form>

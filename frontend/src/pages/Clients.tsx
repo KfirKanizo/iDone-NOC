@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getClients, createClient, regenerateClientKey } from '../api/client';
+import { getClients, createClient, updateClient, deleteClient, regenerateClientKey } from '../api/client';
 import Layout from '../components/Layout';
-import { Plus, RefreshCw, Building2, CheckCircle, X } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { Plus, RefreshCw, Building2, CheckCircle, X, Pencil, Trash2 } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -14,9 +15,12 @@ export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [newClient, setNewClient] = useState({ company_name: '', is_active: true });
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [formData, setFormData] = useState({ company_name: '', is_active: true });
   const [submitting, setSubmitting] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadClients();
@@ -33,19 +37,74 @@ export default function Clients() {
     }
   };
 
+  const openCreateModal = () => {
+    setFormData({ company_name: '', is_active: true });
+    setEditingClient(null);
+    setIsEditMode(false);
+    setShowForm(true);
+  };
+
+  const openEditModal = (client: Client) => {
+    setFormData({ company_name: client.company_name, is_active: client.is_active });
+    setEditingClient(client);
+    setIsEditMode(true);
+    setShowForm(true);
+  };
+
+  const closeModal = () => {
+    setShowForm(false);
+    setIsEditMode(false);
+    setEditingClient(null);
+    setFormData({ company_name: '', is_active: true });
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const created = await createClient(newClient);
+      const created = await createClient(formData);
       setClients([...clients, { ...created, api_key: created.api_key }]);
       setNewApiKey(created.api_key);
-      setShowForm(false);
-      setNewClient({ company_name: '', is_active: true });
+      closeModal();
+      showToast('success', 'Client created successfully');
     } catch (err) {
       console.error('Failed to create client', err);
+      showToast('error', 'Failed to create client');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+    setSubmitting(true);
+    try {
+      const updated = await updateClient(editingClient.id, formData);
+      setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...updated } : c));
+      closeModal();
+      showToast('success', 'Client updated successfully');
+    } catch (err) {
+      console.error('Failed to update client', err);
+      showToast('error', 'Failed to update client');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await deleteClient(id);
+      setClients(clients.filter(c => c.id !== id));
+      showToast('success', 'Client deleted successfully');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      const message = error.response?.data?.detail || 'Failed to delete client';
+      console.error('Failed to delete client', err);
+      showToast('error', message);
     }
   };
 
@@ -54,8 +113,10 @@ export default function Clients() {
       const updated = await regenerateClientKey(id);
       setClients(clients.map(c => c.id === id ? { ...c, api_key: updated.api_key } : c));
       setNewApiKey(updated.api_key);
+      showToast('success', 'API key regenerated');
     } catch (err) {
       console.error('Failed to regenerate key', err);
+      showToast('error', 'Failed to regenerate API key');
     }
   };
 
@@ -68,10 +129,7 @@ export default function Clients() {
             <h1 className="text-2xl font-bold text-slate-900">Clients</h1>
             <p className="text-sm text-slate-500 mt-1">Manage client accounts and API access</p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn-primary"
-          >
+          <button onClick={openCreateModal} className="btn-primary">
             <Plus className="w-4 h-4" />
             Add Client
           </button>
@@ -117,13 +175,29 @@ export default function Clients() {
                         </code>
                       </td>
                       <td className="table-cell">
-                        <button
-                          onClick={() => handleRegenerateKey(client.id)}
-                          className="btn-ghost text-xs"
-                          title="Regenerate API Key"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openEditModal(client)}
+                            className="btn-ghost text-xs"
+                            title="Edit Client"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleRegenerateKey(client.id)}
+                            className="btn-ghost text-xs"
+                            title="Regenerate API Key"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(client.id)}
+                            className="btn-ghost text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete Client"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -139,26 +213,28 @@ export default function Clients() {
           )}
         </div>
 
-        {/* Create Modal */}
+        {/* Create/Edit Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Create Client</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {isEditMode ? 'Edit Client' : 'Create Client'}
+                </h3>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={closeModal}
                   className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <form onSubmit={isEditMode ? handleUpdate : handleCreate} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Company Name</label>
                   <input
                     type="text"
-                    value={newClient.company_name}
-                    onChange={(e) => setNewClient({ ...newClient, company_name: e.target.value })}
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                     className="input-field"
                     placeholder="Enter company name"
                     required
@@ -168,8 +244,8 @@ export default function Clients() {
                   <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
                     <input
                       type="checkbox"
-                      checked={newClient.is_active}
-                      onChange={(e) => setNewClient({ ...newClient, is_active: e.target.checked })}
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                       className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-slate-700">Active</span>
@@ -178,7 +254,7 @@ export default function Clients() {
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={closeModal}
                     className="btn-secondary flex-1"
                   >
                     Cancel
@@ -188,7 +264,7 @@ export default function Clients() {
                     disabled={submitting}
                     className="btn-primary flex-1"
                   >
-                    {submitting ? 'Creating...' : 'Create Client'}
+                    {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Client' : 'Create Client')}
                   </button>
                 </div>
               </form>

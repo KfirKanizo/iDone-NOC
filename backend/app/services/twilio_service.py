@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 from twilio.rest import Client
-from twilio import twiml
+from twilio.twiml.voice_response import VoiceResponse, Gather
 
 from app.config import settings
 
@@ -12,7 +12,13 @@ class TwilioService:
     def __init__(self):
         self.client = None
         if settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN:
-            self.client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+            self.client = Client(
+                settings.TWILIO_ACCOUNT_SID,
+                settings.TWILIO_AUTH_TOKEN,
+            )
+            # Override base URL for mock server if configured
+            if settings.TWILIO_MOCK_URL:
+                self.client.api.base_url = settings.TWILIO_MOCK_URL
             self.from_number = settings.TWILIO_PHONE_NUMBER
             self.base_url = settings.BASE_URL
 
@@ -28,17 +34,16 @@ class TwilioService:
 
         callback_url = f"{self.base_url}/api/v1/twilio/callback?incident_id={incident_id}"
 
-        response = twiml.TwiML()
-        gather = twiml.Gather(
+        response = VoiceResponse()
+        gather = Gather(
             num_digits=1,
             action=callback_url,
             method="POST",
             timeout=15,
         )
-        gather.say(text_to_say, voice="Polly.Joanna-Neural")
+        gather.say(text_to_say, language="en-US")
         response.append(gather)
-        response.say("We did not receive a response. Goodbye.", voice="Polly.Joanna-Neural")
-        response.hangup()
+        response.say("We did not receive a response. Goodbye.", language="en-US")
 
         try:
             call = self.client.calls.create(

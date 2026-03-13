@@ -25,6 +25,19 @@ services:
       timeout: 5s
       retries: 5
 
+  twilio_mock:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uvicorn mock_twilio:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   api:
     build:
       context: ./backend
@@ -38,11 +51,14 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - TWILIO_MOCK_URL=http://twilio_mock:8001
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      twilio_mock:
+        condition: service_started
 
   celery_worker:
     build:
@@ -57,11 +73,14 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - PYTHONPATH=/app
+      - TWILIO_MOCK_URL=http://twilio_mock:8001
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      twilio_mock:
+        condition: service_started
 
   frontend:
     build:
