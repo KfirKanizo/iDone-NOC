@@ -3,11 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import incidents, twilio
 from app.api.v1.admin import auth, clients, contacts, policies, incidents as admin_incidents
+from app.config import settings
 
 app = FastAPI(
     title="NOC Platform API",
     description="Network Operations Center - Incident Management API",
     version="1.0.0",
+    docs_url="/api/docs" if settings.BASE_URL else "/docs",
+    openapi_url="/api/openapi.json" if settings.BASE_URL else "/openapi.json",
+    redoc_url="/api/redoc" if settings.BASE_URL else "/redoc",
 )
 
 app.add_middleware(
@@ -34,8 +38,9 @@ def health_check():
 
 @app.get("/")
 def root():
+    docs_url = "/api/docs" if settings.BASE_URL else "/docs"
     return {
         "message": "NOC Platform API",
-        "docs": "/docs",
+        "docs": docs_url,
         "version": "1.0.0",
     }
