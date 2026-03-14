@@ -141,6 +141,21 @@ export const getIncidents = async (params?: { client_id?: string; status?: strin
   return response.data;
 };
 
+export const createIncident = async (data: { client_id: string; details: string; policy_id?: string }) => {
+  const response = await api.post('/api/v1/admin/incidents', data);
+  return response.data;
+};
+
+export const acknowledgeIncident = async (id: string) => {
+  const response = await api.post(`/api/v1/admin/incidents/${id}/acknowledge`);
+  return response.data;
+};
+
+export const resolveIncident = async (id: string) => {
+  const response = await api.post(`/api/v1/admin/incidents/${id}/resolve`);
+  return response.data;
+};
+
 export const getIncidentLogs = async (incidentId: string) => {
   const response = await api.get(`/api/v1/admin/incidents/${incidentId}/logs`);
   return response.data;

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getIncidents, getIncidentLogs, getClients } from '../api/client';
+import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident } from '../api/client';
 import Layout from '../components/Layout';
-import { Eye, AlertTriangle, CheckCircle, Clock, Users, Activity } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { Eye, AlertTriangle, CheckCircle, Clock, Users, Activity, Bell, Plus, X } from 'lucide-react';
 
 interface Incident {
   id: string;
@@ -22,6 +23,11 @@ interface IncidentLog {
   created_at: string;
 }
 
+interface Client {
+  id: string;
+  company_name: string;
+}
+
 const statusConfig: Record<string, { label: string; className: string }> = {
   OPEN: { label: 'Open', className: 'badge-danger' },
   ACKNOWLEDGED: { label: 'Acknowledged', className: 'badge-warning' },
@@ -31,11 +37,15 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function Dashboard() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [logs, setLogs] = useState<IncidentLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({ client_id: '', details: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadData();
@@ -49,10 +59,53 @@ export default function Dashboard() {
       ]);
       setIncidents(incidentsData);
       setClients(clientsData);
+      if (clientsData.length > 0 && !createForm.client_id) {
+        setCreateForm(prev => ({ ...prev, client_id: clientsData[0].id }));
+      }
     } catch (err) {
       console.error('Failed to load data', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAcknowledge = async (incident: Incident) => {
+    try {
+      await acknowledgeIncident(incident.id);
+      showToast('success', 'Incident acknowledged');
+      loadData();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast('error', error.response?.data?.detail || 'Failed to acknowledge incident');
+    }
+  };
+
+  const handleResolve = async (incident: Incident) => {
+    try {
+      await resolveIncident(incident.id);
+      showToast('success', 'Incident resolved');
+      loadData();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast('error', error.response?.data?.detail || 'Failed to resolve incident');
+    }
+  };
+
+  const handleCreateIncident = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.client_id || !createForm.details) return;
+    setSubmitting(true);
+    try {
+      await createIncident({ client_id: createForm.client_id, details: createForm.details });
+      showToast('success', 'Incident created successfully');
+      setShowCreateModal(false);
+      setCreateForm({ client_id: clients[0]?.id || '', details: '' });
+      loadData();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      showToast('error', error.response?.data?.detail || 'Failed to create incident');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -96,9 +149,15 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Incidents Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Monitor and manage all system incidents</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Incidents Dashboard</h1>
+            <p className="text-sm text-slate-500 mt-1">Monitor and manage all system incidents</p>
+          </div>
+          <button onClick={() => setShowCreateModal(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Trigger Incident
+          </button>
         </div>
 
         {/* Stats Cards */}
@@ -157,13 +216,33 @@ export default function Dashboard() {
                           {new Date(incident.created_at).toLocaleString()}
                         </td>
                         <td className="table-cell">
-                          <button
-                            onClick={() => viewLogs(incident)}
-                            className="btn-outline text-xs"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            View Logs
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {incident.status === 'OPEN' && (
+                              <button
+                                onClick={() => handleAcknowledge(incident)}
+                                className="btn-ghost text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                title="Acknowledge"
+                              >
+                                <Bell className="w-4 h-4" />
+                              </button>
+                            )}
+                            {(incident.status === 'OPEN' || incident.status === 'ACKNOWLEDGED') && (
+                              <button
+                                onClick={() => handleResolve(incident)}
+                                className="btn-ghost text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                title="Resolve"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => viewLogs(incident)}
+                              className="btn-outline text-xs"
+                              title="View Logs"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -180,6 +259,66 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Create Incident Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">Trigger Incident</h3>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleCreateIncident} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Client</label>
+                  <select
+                    value={createForm.client_id}
+                    onChange={(e) => setCreateForm({ ...createForm, client_id: e.target.value })}
+                    className="select-field"
+                    required
+                  >
+                    <option value="">Select client</option>
+                    {clients.map(client => (
+                      <option key={client.id} value={client.id}>{client.company_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Details</label>
+                  <textarea
+                    value={createForm.details}
+                    onChange={(e) => setCreateForm({ ...createForm, details: e.target.value })}
+                    className="input-field"
+                    placeholder="Enter incident details"
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="btn-primary flex-1"
+                  >
+                    {submitting ? 'Creating...' : 'Create Incident'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Logs Modal */}
         {selectedIncident && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -193,9 +332,7 @@ export default function Dashboard() {
                   onClick={() => setSelectedIncident(null)}
                   className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">

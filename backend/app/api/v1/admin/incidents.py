@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 
 from app.database import get_db
-from app.models import Client, Incident, IncidentLog, IncidentStatus, ActionType
+from app.models import Client, Incident, EscalationPolicy, IncidentLog, IncidentStatus, ActionType
 from app.api.v1.admin.auth import get_current_admin
 
 router = APIRouter(prefix="/incidents", tags=["admin-incidents"])
@@ -117,3 +117,150 @@ def get_incident_logs(
         )
         for log in logs
     ]
+
+
+class CreateIncidentRequest(BaseModel):
+    client_id: str
+    details: str = "Alert"
+    policy_id: Optional[str] = None
+
+
+@router.post("", response_model=IncidentResponse)
+def create_incident_admin(
+    request: CreateIncidentRequest,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    client = db.query(Client).filter(Client.id == uuid.UUID(request.client_id)).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    policy = None
+    if request.policy_id:
+        policy = db.query(EscalationPolicy).filter(
+            EscalationPolicy.id == uuid.UUID(request.policy_id),
+            EscalationPolicy.client_id == client.id,
+        ).first()
+    
+    if not policy:
+        policy = db.query(EscalationPolicy).filter(
+            EscalationPolicy.client_id == client.id,
+            EscalationPolicy.is_active == True,
+        ).first()
+    
+    if not policy:
+        raise HTTPException(status_code=400, detail="Client has no active escalation policy")
+    
+    incident = Incident(
+        client_id=client.id,
+        policy_id=policy.id,
+        payload={"details": request.details},
+        status=IncidentStatus.OPEN,
+        current_escalation_level=0,
+        current_retry_count=0,
+    )
+    db.add(incident)
+    db.flush()
+    
+    log_entry = IncidentLog(
+        incident_id=incident.id,
+        action_type=ActionType.INGESTED,
+        details={
+            "client_id": str(client.id),
+            "policy_id": str(policy.id),
+            "source": "manual_dashboard",
+            "payload": incident.payload,
+        },
+    )
+    db.add(log_entry)
+    db.commit()
+    db.refresh(incident)
+    
+    return IncidentResponse(
+        id=str(incident.id),
+        client_id=str(incident.client_id),
+        policy_id=str(incident.policy_id) if incident.policy_id else None,
+        payload=incident.payload,
+        status=incident.status.value,
+        current_escalation_level=incident.current_escalation_level,
+        current_retry_count=incident.current_retry_count,
+        acknowledged_by=str(incident.acknowledged_by) if incident.acknowledged_by else None,
+        created_at=incident.created_at,
+    )
+
+
+@router.post("/{incident_id}/acknowledge", response_model=IncidentResponse)
+def acknowledge_incident(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    incident = db.query(Incident).filter(Incident.id == uuid.UUID(incident_id)).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    
+    if incident.status == IncidentStatus.RESOLVED:
+        raise HTTPException(status_code=400, detail="Cannot acknowledge a resolved incident")
+    
+    if incident.status == IncidentStatus.ACKNOWLEDGED:
+        raise HTTPException(status_code=400, detail="Incident is already acknowledged")
+    
+    incident.status = IncidentStatus.ACKNOWLEDGED
+    
+    log_entry = IncidentLog(
+        incident_id=incident.id,
+        action_type=ActionType.ACKNOWLEDGED,
+        details={"method": "manual_dashboard", "message": "Manually acknowledged via dashboard"},
+    )
+    db.add(log_entry)
+    db.commit()
+    db.refresh(incident)
+    
+    return IncidentResponse(
+        id=str(incident.id),
+        client_id=str(incident.client_id),
+        policy_id=str(incident.policy_id) if incident.policy_id else None,
+        payload=incident.payload,
+        status=incident.status.value,
+        current_escalation_level=incident.current_escalation_level,
+        current_retry_count=incident.current_retry_count,
+        acknowledged_by=str(incident.acknowledged_by) if incident.acknowledged_by else None,
+        created_at=incident.created_at,
+    )
+
+
+@router.post("/{incident_id}/resolve", response_model=IncidentResponse)
+def resolve_incident(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    incident = db.query(Incident).filter(Incident.id == uuid.UUID(incident_id)).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    
+    if incident.status == IncidentStatus.RESOLVED:
+        raise HTTPException(status_code=400, detail="Incident is already resolved")
+    
+    incident.status = IncidentStatus.RESOLVED
+    
+    log_entry = IncidentLog(
+        incident_id=incident.id,
+        action_type=ActionType.RESOLVED,
+        details={"method": "manual_dashboard", "message": "Manually resolved via dashboard"},
+    )
+    db.add(log_entry)
+    db.commit()
+    db.refresh(incident)
+    
+    return IncidentResponse(
+        id=str(incident.id),
+        client_id=str(incident.client_id),
+        policy_id=str(incident.policy_id) if incident.policy_id else None,
+        payload=incident.payload,
+        status=incident.status.value,
+        current_escalation_level=incident.current_escalation_level,
+        current_retry_count=incident.current_retry_count,
+        acknowledged_by=str(incident.acknowledged_by) if incident.acknowledged_by else None,
+        created_at=incident.created_at,
+    )
