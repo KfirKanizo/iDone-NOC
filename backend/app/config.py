@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_PHONE_NUMBER: str = ""
     TWILIO_MOCK_URL: Optional[str] = None
-    BASE_URL: str = "http://localhost:8000"
+    BASE_URL: str = ""
 
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
