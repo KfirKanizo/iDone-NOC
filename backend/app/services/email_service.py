@@ -65,14 +65,14 @@ NOC Platform
   <meta charset="UTF-8">
   <title>🔴 NOC Incident Alert</title>
   <style>
-    body {
+    body {{
       background: #fdecea;
       font-family: 'Assistant', Arial, sans-serif;
       margin: 0;
       padding: 0;
       direction: ltr;
-    }
-    .container {
+    }}
+    .container {{
       max-width: 520px;
       margin: 40px auto;
       background: #fff;
@@ -80,40 +80,40 @@ NOC Platform
       box-shadow: 0 2px 12px #0002;
       padding: 32px 28px;
       border-left: 8px solid #dc3545;
-    }
-    .logo {
+    }}
+    .logo {{
       text-align: left;
       margin-bottom: 18px;
-    }
-    .logo img {
+    }}
+    .logo img {{
       height: 100px;
-    }
-    h2 {
+    }}
+    h2 {{
       color: #dc3545;
       font-size: 24px;
       margin: 0 0 18px 0;
       font-weight: bold;
-    }
-    .content {
+    }}
+    .content {{
       font-size: 18px;
       color: #212529;
       line-height: 1.7;
       margin-bottom: 28px;
-    }
-    .error-info {
+    }}
+    .error-info {{
       background: #f8f9fa;
       border-radius: 8px;
       padding: 20px;
       margin: 20px 0;
       border-left: 4px solid #dc3545;
-    }
-    .error-title {
+    }}
+    .error-title {{
       color: #dc3545;
       font-size: 20px;
       font-weight: bold;
       margin-bottom: 15px;
-    }
-    .call-to-action {
+    }}
+    .call-to-action {{
       text-align: center;
       margin: 28px 0;
       padding: 15px;
@@ -122,13 +122,13 @@ NOC Platform
       border-radius: 6px;
       font-weight: bold;
       border: 1px solid #ffeeba;
-    }
-    .footer {
+    }}
+    .footer {{
       margin-top: 40px;
       font-size: 14px;
       color: #8b9bac;
       text-align: center;
-    }
+    }}
   </style>
 </head>
 <body>
