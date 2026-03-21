@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, Query, Form
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from twilio.twiml.voice_response import VoiceResponse
+from twilio.twiml.voice_response import VoiceResponse, Gather
 
 from app.database import get_db
 from app.models import Incident, EscalationPolicy, IncidentLog, ActionType, IncidentStatus
@@ -16,13 +16,17 @@ CALLBACK_STRINGS = {
         "not_found": "Incident not found. Goodbye.",
         "already_acknowledged": "This incident has already been acknowledged. Goodbye.",
         "acknowledged": "Thank you. You have acknowledged this incident. We will notify you of any updates.",
-        "invalid_input": "Invalid input. Please press 1 to acknowledge the incident.",
+        "invalid_input": "Invalid key. To acknowledge, press 1.",
+        "menu_prompt": "Please press 1 to acknowledge this incident.",
+        "no_response": "We did not receive a response. Goodbye.",
     },
     "he-IL": {
         "not_found": "האירוע לא נמצא. להתראות.",
         "already_acknowledged": "האירוע כבר אושר. להתראות.",
         "acknowledged": "תודה. אישרת קבלת האירוע. נעדכן אותך בכל שינוי.",
-        "invalid_input": "קלט לא חוקי. אנא הקש 1 לאישור קבלת ההתראה.",
+        "invalid_input": "מקש שגוי. כדי לאשר את קבלת ההתראה, הקש 1.",
+        "menu_prompt": "אנא הקש 1 לאישור קבלת ההתראה.",
+        "no_response": "לא קיבלנו מענה. להתראות.",
     },
 }
 
@@ -82,10 +86,28 @@ def twilio_callback(
         logger.info(f"Incident {incident_id} successfully acknowledged")
         
         response.say(strings["acknowledged"], language=language)
+    elif Digits is not None:
+        logger.info(f"Invalid digits received: {Digits}, re-prompting with gather")
+        gather = Gather(
+            num_digits=1,
+            action=f"/api/v1/twilio/callback?incident_id={incident_id}",
+            method="POST",
+            timeout=10,
+        )
+        gather.say(strings["invalid_input"], language=language)
+        response.append(gather)
+        response.say(strings["no_response"], language=language)
     else:
-        logger.info(f"Invalid digits received: {Digits}, re-prompting")
-        response.say(strings["invalid_input"], language=language)
-        response.redirect("/api/v1/twilio/callback?incident_id=" + incident_id)
+        logger.info(f"No digits received, redirecting to main menu")
+        gather = Gather(
+            num_digits=1,
+            action=f"/api/v1/twilio/callback?incident_id={incident_id}",
+            method="POST",
+            timeout=15,
+        )
+        gather.say(strings["menu_prompt"], language=language)
+        response.append(gather)
+        response.say(strings["no_response"], language=language)
     
     return Response(content=str(response), media_type="application/xml")
 
