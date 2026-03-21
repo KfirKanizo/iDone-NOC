@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import uuid
 
 from app.database import get_db
-from app.models import Client, Contact
+from app.models import Client, Contact, EscalationPolicy
 from app.api.v1.admin.auth import get_current_admin
 
 router = APIRouter(prefix="/contacts", tags=["admin-contacts"])
@@ -160,6 +160,25 @@ def delete_contact(
     contact = db.query(Contact).filter(Contact.id == uuid.UUID(contact_id)).first()
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
+    
+    contact_uuid = uuid.UUID(contact_id)
+    linked_policies = db.query(EscalationPolicy).filter(
+        or_(
+            EscalationPolicy.level_0_contact_id == contact_uuid,
+            EscalationPolicy.level_1_contact_id == contact_uuid,
+            EscalationPolicy.level_2_contact_id == contact_uuid,
+            EscalationPolicy.level_3_contact_id == contact_uuid,
+            EscalationPolicy.level_4_contact_id == contact_uuid,
+            EscalationPolicy.level_5_contact_id == contact_uuid,
+        )
+    ).all()
+    
+    if linked_policies:
+        policy_names = ", ".join([p.name for p in linked_policies])
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete contact because it is assigned to escalation policy: {policy_names}. Please remove this contact from the policy first."
+        )
     
     contact.is_active = False
     db.commit()

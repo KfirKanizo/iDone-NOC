@@ -172,8 +172,8 @@ export default function Contacts() {
       setContacts(contacts.filter(c => c.id !== id));
       showToast('success', 'Contact deleted successfully');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } } };
-      const message = error.response?.data?.detail || 'Failed to delete contact';
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      const message = error.response?.data?.detail || error.message || 'Failed to delete contact';
       console.error('Failed to delete contact', err);
       showToast('error', message);
     }
