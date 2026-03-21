@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { getClients, getContacts, getPolicies, createPolicy, updatePolicy, deletePolicy } from '../api/client';
 import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { Plus, FileText, Clock, ArrowRight, X, Pencil, Trash2, RefreshCw, Users } from 'lucide-react';
+import { Plus, FileText, Clock, ArrowRight, X, Pencil, Trash2, RefreshCw } from 'lucide-react';
 
 interface Client {
   id: string;
