@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getClients, getContacts, createContact, updateContact, deleteContact } from '../api/client';
 import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { Plus, User, Mail, Phone, X, Pencil, Trash2 } from 'lucide-react';
+import { Plus, User, Mail, Phone, X, Pencil, Trash2, Users } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -19,13 +20,19 @@ interface Contact {
   language: string;
 }
 
+const LOCALSTORAGE_KEY = 'noc_selected_client_id';
+
 export default function Contacts() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string>(() => {
+    return searchParams.get('client_id') || localStorage.getItem(LOCALSTORAGE_KEY) || '';
+  });
   const [formData, setFormData] = useState({
     client_id: '',
     full_name: '',
@@ -38,30 +45,52 @@ export default function Contacts() {
   const { showToast } = useToast();
 
   useEffect(() => {
-    loadData();
+    loadClients();
   }, []);
 
-  const loadData = async () => {
+  useEffect(() => {
+    loadFilteredContacts();
+  }, [selectedClientId]);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      setSearchParams({ client_id: selectedClientId });
+    } else {
+      setSearchParams({});
+    }
+    localStorage.setItem(LOCALSTORAGE_KEY, selectedClientId);
+  }, [selectedClientId, setSearchParams]);
+
+  const loadClients = async () => {
     try {
-      const [contactsData, clientsData] = await Promise.all([
-        getContacts(),
-        getClients(),
-      ]);
-      setContacts(contactsData);
+      const clientsData = await getClients();
       setClients(clientsData);
-      if (clientsData.length > 0 && !formData.client_id) {
-        setFormData(prev => ({ ...prev, client_id: clientsData[0].id }));
-      }
     } catch (err) {
-      console.error('Failed to load data', err);
+      console.error('Failed to load clients', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadFilteredContacts = async () => {
+    setLoading(true);
+    try {
+      const contactsData = await getContacts(selectedClientId || undefined);
+      setContacts(contactsData);
+    } catch (err) {
+      console.error('Failed to load contacts', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClientFilterChange = (clientId: string) => {
+    setSelectedClientId(clientId);
+  };
+
   const openCreateModal = () => {
     setFormData({
-      client_id: clients[0]?.id || '',
+      client_id: selectedClientId || clients[0]?.id || '',
       full_name: '',
       email: '',
       phone_number: '',
@@ -92,7 +121,7 @@ export default function Contacts() {
     setIsEditMode(false);
     setEditingContact(null);
     setFormData({
-      client_id: clients[0]?.id || '',
+      client_id: selectedClientId || clients[0]?.id || '',
       full_name: '',
       email: '',
       phone_number: '',
@@ -155,10 +184,17 @@ export default function Contacts() {
     return client?.company_name || clientId.slice(0, 8);
   };
 
+  const getSelectedClientName = () => {
+    if (!selectedClientId) return null;
+    const client = clients.find(c => c.id === selectedClientId);
+    return client?.company_name || null;
+  };
+
+  const selectedClientName = getSelectedClientName();
+
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Contacts</h1>
@@ -170,7 +206,22 @@ export default function Contacts() {
           </button>
         </div>
 
-        {/* Contacts Table */}
+        <div className="card p-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <label className="text-sm font-medium text-slate-600">Filter by Client:</label>
+            <select
+              value={selectedClientId}
+              onChange={(e) => handleClientFilterChange(e.target.value)}
+              className="select-field w-48"
+            >
+              <option value="">All Clients</option>
+              {clients.map(client => (
+                <option key={client.id} value={client.id}>{client.company_name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="card overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-slate-500">
@@ -249,15 +300,19 @@ export default function Contacts() {
               </table>
               {contacts.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                  <User className="w-8 h-8 mb-2 text-slate-300" />
-                  <p>No contacts found</p>
+                  <Users className="w-8 h-8 mb-2 text-slate-300" />
+                  <p>
+                    {selectedClientName 
+                      ? `No contacts found for ${selectedClientName}`
+                      : 'No contacts found'}
+                  </p>
+                  <p className="text-sm mt-1">Try a different client or add a new contact</p>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Create/Edit Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
@@ -280,12 +335,16 @@ export default function Contacts() {
                     onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
                     className="select-field"
                     required
+                    disabled={!isEditMode && selectedClientId !== ''}
                   >
                     <option value="">Select client</option>
                     {clients.map(client => (
                       <option key={client.id} value={client.id}>{client.company_name}</option>
                     ))}
                   </select>
+                  {!isEditMode && selectedClientId !== '' && (
+                    <p className="text-xs text-slate-500 mt-1">Client is locked to the selected filter</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>

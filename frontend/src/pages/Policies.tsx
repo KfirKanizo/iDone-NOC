@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getClients, getContacts, getPolicies, createPolicy, updatePolicy, deletePolicy } from '../api/client';
 import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { Plus, FileText, Clock, ArrowRight, X, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, FileText, Clock, ArrowRight, X, Pencil, Trash2, RefreshCw, Users } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -55,7 +56,10 @@ const defaultPolicy = {
   is_active: true,
 };
 
+const LOCALSTORAGE_KEY = 'noc_selected_client_id';
+
 export default function Policies() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -63,43 +67,63 @@ export default function Policies() {
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
-  const [selectedClient, setSelectedClient] = useState('');
+  const [selectedClientId, setSelectedClientId] = useState<string>(() => {
+    return searchParams.get('client_id') || localStorage.getItem(LOCALSTORAGE_KEY) || '';
+  });
   const [formData, setFormData] = useState(defaultPolicy);
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
-    loadData();
+    loadClients();
   }, []);
 
   useEffect(() => {
-    if (!isEditMode) {
-      setFormData(prev => ({ ...prev, client_id: selectedClient }));
-    }
-  }, [selectedClient, isEditMode]);
+    loadFilteredPolicies();
+  }, [selectedClientId]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (selectedClientId) {
+      setSearchParams({ client_id: selectedClientId });
+    } else {
+      setSearchParams({});
+    }
+    localStorage.setItem(LOCALSTORAGE_KEY, selectedClientId);
+  }, [selectedClientId, setSearchParams]);
+
+  const loadClients = async () => {
     try {
-      const [clientsData, contactsData, policiesData] = await Promise.all([
+      const [clientsData, contactsData] = await Promise.all([
         getClients(),
         getContacts(),
-        getPolicies(),
       ]);
       setClients(clientsData);
       setContacts(contactsData);
-      setPolicies(policiesData);
-      if (clientsData.length > 0) {
-        setSelectedClient(clientsData[0].id);
-      }
     } catch (err) {
-      console.error('Failed to load data', err);
+      console.error('Failed to load clients', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadFilteredPolicies = async () => {
+    setLoading(true);
+    try {
+      const policiesData = await getPolicies(selectedClientId || undefined);
+      setPolicies(policiesData);
+    } catch (err) {
+      console.error('Failed to load policies', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClientFilterChange = (clientId: string) => {
+    setSelectedClientId(clientId);
+  };
+
   const openCreateModal = () => {
-    setFormData({ ...defaultPolicy, client_id: selectedClient });
+    setFormData({ ...defaultPolicy, client_id: selectedClientId || clients[0]?.id || '' });
     setEditingPolicy(null);
     setIsEditMode(false);
     setShowForm(true);
@@ -120,7 +144,6 @@ export default function Policies() {
       level_5_contact_id: policy.level_5_contact_id || '',
       is_active: policy.is_active,
     });
-    setSelectedClient(policy.client_id);
     setEditingPolicy(policy);
     setIsEditMode(true);
     setShowForm(true);
@@ -130,7 +153,7 @@ export default function Policies() {
     setShowForm(false);
     setIsEditMode(false);
     setEditingPolicy(null);
-    setFormData({ ...defaultPolicy, client_id: selectedClient });
+    setFormData({ ...defaultPolicy, client_id: selectedClientId || clients[0]?.id || '' });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -209,12 +232,18 @@ export default function Policies() {
     return client?.company_name || clientId.slice(0, 8);
   };
 
-  const clientContacts = contacts.filter(c => c.client_id === selectedClient);
+  const getSelectedClientName = () => {
+    if (!selectedClientId) return null;
+    const client = clients.find(c => c.id === selectedClientId);
+    return client?.company_name || null;
+  };
+
+  const selectedClientName = getSelectedClientName();
+  const clientContacts = contacts.filter(c => c.client_id === formData.client_id);
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Escalation Policies</h1>
@@ -226,7 +255,22 @@ export default function Policies() {
           </button>
         </div>
 
-        {/* Policies Table */}
+        <div className="card p-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <label className="text-sm font-medium text-slate-600">Filter by Client:</label>
+            <select
+              value={selectedClientId}
+              onChange={(e) => handleClientFilterChange(e.target.value)}
+              className="select-field w-48"
+            >
+              <option value="">All Clients</option>
+              {clients.map(client => (
+                <option key={client.id} value={client.id}>{client.company_name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="card overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-slate-500">
@@ -300,14 +344,18 @@ export default function Policies() {
               {policies.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-500">
                   <FileText className="w-8 h-8 mb-2 text-slate-300" />
-                  <p>No policies found</p>
+                  <p>
+                    {selectedClientName 
+                      ? `No policies found for ${selectedClientName}`
+                      : 'No policies found'}
+                  </p>
+                  <p className="text-sm mt-1">Try a different client or create a new policy</p>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Create/Edit Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
@@ -329,21 +377,24 @@ export default function Policies() {
               </div>
               
               <form onSubmit={isEditMode ? handleUpdate : handleCreate} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-                {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Client</label>
                     <select
-                      value={selectedClient}
-                      onChange={(e) => setSelectedClient(e.target.value)}
+                      value={formData.client_id}
+                      onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
                       className="select-field"
                       required
-                      disabled={isEditMode}
+                      disabled={!isEditMode && selectedClientId !== ''}
                     >
+                      <option value="">Select client</option>
                       {clients.map(client => (
                         <option key={client.id} value={client.id}>{client.company_name}</option>
                       ))}
                     </select>
+                    {!isEditMode && selectedClientId !== '' && (
+                      <p className="text-xs text-slate-500 mt-1">Client is locked to the selected filter</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Policy Name</label>
@@ -396,7 +447,6 @@ export default function Policies() {
                   <p className="text-xs text-slate-500 mt-1">Use {'{incident_details}'} as placeholder</p>
                 </div>
 
-                {/* Escalation Flow */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-3">Escalation Flow</label>
                   <div className="space-y-3">
