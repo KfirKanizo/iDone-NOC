@@ -66,7 +66,7 @@ def get_dashboard_stats(
     query = db.query(Incident)
     
     date_filter = get_date_range_filter(time_range)
-    if date_filter:
+    if date_filter is not None:
         query = query.filter(date_filter)
     
     if client_id:
@@ -96,7 +96,7 @@ def get_charts_data(
 ):
     base_query = db.query(Incident)
     date_filter = get_date_range_filter(time_range)
-    if date_filter:
+    if date_filter is not None:
         base_query = base_query.filter(date_filter)
     if client_id:
         base_query = base_query.filter(Incident.client_id == uuid.UUID(client_id))
