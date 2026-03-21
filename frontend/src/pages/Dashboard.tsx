@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident, getDashboardStats, DashboardStats } from '../api/client';
+import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident, getDashboardStats } from '../api/client';
+import type { DashboardStats, Client } from '../api/client';
 import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { Eye, AlertTriangle, CheckCircle, Clock, Users, Activity, Bell, Plus, X, RefreshCw } from 'lucide-react';
+import { Eye, AlertTriangle, CheckCircle, Clock, Activity, Bell, Plus, X, RefreshCw } from 'lucide-react';
 
 interface Incident {
   id: string;
@@ -21,11 +22,6 @@ interface IncidentLog {
   action_type: string;
   details: Record<string, unknown>;
   created_at: string;
-}
-
-interface Client {
-  id: string;
-  company_name: string;
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {

@@ -192,6 +192,11 @@ export interface ChartsData {
   incidents_trend: IncidentsTrendItem[];
 }
 
+export interface Client {
+  id: string;
+  company_name: string;
+}
+
 export const getDashboardStats = async (params?: {
   client_id?: string;
   status?: string;

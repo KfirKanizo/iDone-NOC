@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getChartsData, getClients, ChartsData, Client } from '../api/client';
+import { getChartsData, getClients } from '../api/client';
+import type { ChartsData, Client } from '../api/client';
 import Layout from '../components/Layout';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
