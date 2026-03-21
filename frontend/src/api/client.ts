@@ -163,4 +163,50 @@ export const getIncidentLogs = async (incidentId: string) => {
   return response.data;
 };
 
+export interface DashboardStats {
+  open_count: number;
+  acknowledged_count: number;
+  total_count: number;
+  time_range: string;
+}
+
+export interface EscalationFunnelItem {
+  level: string;
+  count: number;
+}
+
+export interface IncidentsByClientItem {
+  client_name: string;
+  count: number;
+}
+
+export interface IncidentsTrendItem {
+  date: string;
+  count: number;
+}
+
+export interface ChartsData {
+  mtta_seconds: number | null;
+  escalation_funnel: EscalationFunnelItem[];
+  incidents_by_client: IncidentsByClientItem[];
+  incidents_trend: IncidentsTrendItem[];
+}
+
+export const getDashboardStats = async (params?: {
+  client_id?: string;
+  status?: string;
+  time_range?: string;
+}): Promise<DashboardStats> => {
+  const response = await api.get('/api/v1/analytics/dashboard-stats', { params });
+  return response.data;
+};
+
+export const getChartsData = async (params?: {
+  client_id?: string;
+  time_range?: string;
+}): Promise<ChartsData> => {
+  const response = await api.get('/api/v1/analytics/charts', { params });
+  return response.data;
+};
+
 export default api;

@@ -6,7 +6,8 @@ import {
   Phone, 
   FileText, 
   LogOut,
-  Shield
+  Shield,
+  BarChart3
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -15,6 +16,7 @@ interface LayoutProps {
 
 const navItems = [
   { path: '/dashboard', label: 'Incidents', icon: LayoutDashboard },
+  { path: '/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/clients', label: 'Clients', icon: Users },
   { path: '/contacts', label: 'Contacts', icon: Phone },
   { path: '/policies', label: 'Policies', icon: FileText },

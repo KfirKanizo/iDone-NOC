@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident } from '../api/client';
+import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident, getDashboardStats, DashboardStats } from '../api/client';
 import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { Eye, AlertTriangle, CheckCircle, Clock, Users, Activity, Bell, Plus, X } from 'lucide-react';
+import { Eye, AlertTriangle, CheckCircle, Clock, Users, Activity, Bell, Plus, X, RefreshCw } from 'lucide-react';
 
 interface Incident {
   id: string;
@@ -35,6 +35,20 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   FAILED_ESCALATION: { label: 'Failed', className: 'badge-neutral' },
 };
 
+const timeRangeOptions = [
+  { value: 'today', label: 'Today' },
+  { value: 'last_7_days', label: 'Last 7 Days' },
+  { value: 'last_30_days', label: 'Last 30 Days' },
+];
+
+const statusOptions = [
+  { value: '', label: 'All Statuses' },
+  { value: 'OPEN', label: 'Open' },
+  { value: 'ACKNOWLEDGED', label: 'Acknowledged' },
+  { value: 'RESOLVED', label: 'Resolved' },
+  { value: 'FAILED_ESCALATION', label: 'Failed' },
+];
+
 export default function Dashboard() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -46,19 +60,33 @@ export default function Dashboard() {
   const [createForm, setCreateForm] = useState({ client_id: '', details: '' });
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
+  
+  const [filters, setFilters] = useState({
+    client_id: '',
+    status: '',
+    time_range: 'last_7_days',
+  });
+  
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    loadFilteredData();
+  }, [filters]);
+
   const loadData = async () => {
     try {
-      const [incidentsData, clientsData] = await Promise.all([
+      const [incidentsData, clientsData, statsData] = await Promise.all([
         getIncidents({ limit: 50 }),
         getClients(),
+        getDashboardStats({ time_range: filters.time_range }),
       ]);
       setIncidents(incidentsData);
       setClients(clientsData);
+      setStats(statsData);
       if (clientsData.length > 0 && !createForm.client_id) {
         setCreateForm(prev => ({ ...prev, client_id: clientsData[0].id }));
       }
@@ -69,11 +97,36 @@ export default function Dashboard() {
     }
   };
 
+  const loadFilteredData = async () => {
+    setLoading(true);
+    try {
+      const params: { client_id?: string; status?: string; limit?: number } = { limit: 100 };
+      if (filters.client_id) params.client_id = filters.client_id;
+      if (filters.status) params.status = filters.status;
+      
+      const [incidentsData, statsData] = await Promise.all([
+        getIncidents(params),
+        getDashboardStats({
+          client_id: filters.client_id || undefined,
+          status: filters.status || undefined,
+          time_range: filters.time_range,
+        }),
+      ]);
+      
+      setIncidents(incidentsData);
+      setStats(statsData);
+    } catch (err) {
+      console.error('Failed to load filtered data', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAcknowledge = async (incident: Incident) => {
     try {
       await acknowledgeIncident(incident.id);
       showToast('success', 'Incident acknowledged');
-      loadData();
+      loadFilteredData();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } };
       showToast('error', error.response?.data?.detail || 'Failed to acknowledge incident');
@@ -84,7 +137,7 @@ export default function Dashboard() {
     try {
       await resolveIncident(incident.id);
       showToast('success', 'Incident resolved');
-      loadData();
+      loadFilteredData();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } };
       showToast('error', error.response?.data?.detail || 'Failed to resolve incident');
@@ -100,7 +153,7 @@ export default function Dashboard() {
       showToast('success', 'Incident created successfully');
       setShowCreateModal(false);
       setCreateForm({ client_id: clients[0]?.id || '', details: '' });
-      loadData();
+      loadFilteredData();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } };
       showToast('error', error.response?.data?.detail || 'Failed to create incident');
@@ -121,10 +174,6 @@ export default function Dashboard() {
       setLogsLoading(false);
     }
   };
-
-  const openCount = incidents.filter(i => i.status === 'OPEN').length;
-  const acknowledgedCount = incidents.filter(i => i.status === 'ACKNOWLEDGED').length;
-  const resolvedCount = incidents.filter(i => i.status === 'RESOLVED').length;
 
   const getClientName = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
@@ -148,7 +197,6 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Incidents Dashboard</h1>
@@ -160,15 +208,70 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Active Incidents" value={openCount} icon={AlertTriangle} color="bg-red-100 text-red-600" />
-          <StatCard title="Acknowledged" value={acknowledgedCount} icon={Clock} color="bg-amber-100 text-amber-600" />
-          <StatCard title="Resolved" value={resolvedCount} icon={CheckCircle} color="bg-emerald-100 text-emerald-600" />
-          <StatCard title="Total Clients" value={clients.length} icon={Users} color="bg-primary-100 text-primary-600" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard 
+            title="Open Incidents" 
+            value={stats?.open_count || 0} 
+            icon={AlertTriangle} 
+            color="bg-red-100 text-red-600" 
+          />
+          <StatCard 
+            title="Acknowledged" 
+            value={stats?.acknowledged_count || 0} 
+            icon={Clock} 
+            color="bg-amber-100 text-amber-600" 
+          />
+          <StatCard 
+            title="Total (Period)" 
+            value={stats?.total_count || 0} 
+            icon={Activity} 
+            color="bg-blue-100 text-blue-600" 
+          />
         </div>
 
-        {/* Incidents Table */}
+        <div className="card p-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <select
+              value={filters.client_id}
+              onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
+              className="select-field w-48"
+            >
+              <option value="">All Clients</option>
+              {clients.map(client => (
+                <option key={client.id} value={client.id}>{client.company_name}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              className="select-field w-40"
+            >
+              {statusOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filters.time_range}
+              onChange={(e) => setFilters({ ...filters, time_range: e.target.value })}
+              className="select-field w-40"
+            >
+              {timeRangeOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            
+            <button
+              onClick={loadFilteredData}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+          </div>
+        </div>
+
         <div className="card overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Recent Incidents</h2>
@@ -259,7 +362,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Create Incident Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
@@ -319,7 +421,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Logs Modal */}
         {selectedIncident && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
