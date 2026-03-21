@@ -7,6 +7,19 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+LANGUAGE_STRINGS = {
+    "en-US": {
+        "prefix": "New Incident alert from iDone NOC system.",
+        "suffix": "Please press 1 to acknowledge this alert.",
+        "no_response": "We did not receive a response. Goodbye.",
+    },
+    "he-IL": {
+        "prefix": "התראת נוק חדשה ממערכת הNOC של iDone.",
+        "suffix": "אנא הקש 1 לאישור קבלת ההתראה.",
+        "no_response": "לא קיבלנו מענה. להתראות.",
+    },
+}
+
 
 class TwilioService:
     def __init__(self):
@@ -16,7 +29,6 @@ class TwilioService:
                 settings.TWILIO_ACCOUNT_SID,
                 settings.TWILIO_AUTH_TOKEN,
             )
-            # Override base URL for mock server if configured
             if settings.TWILIO_MOCK_URL:
                 self.client.api.base_url = settings.TWILIO_MOCK_URL
             self.from_number = settings.TWILIO_PHONE_NUMBER
@@ -27,10 +39,14 @@ class TwilioService:
         to_number: str,
         text_to_say: str,
         incident_id: str,
+        language: str = "en-US",
     ) -> Optional[str]:
         if not self.client:
             logger.warning("Twilio not configured, skipping call")
             return None
+
+        strings = LANGUAGE_STRINGS.get(language, LANGUAGE_STRINGS["en-US"])
+        full_message = f"{strings['prefix']} {text_to_say} {strings['suffix']}"
 
         callback_url = f"{self.base_url}/api/v1/twilio/callback?incident_id={incident_id}"
 
@@ -41,9 +57,9 @@ class TwilioService:
             method="POST",
             timeout=15,
         )
-        gather.say(text_to_say, language="en-US")
+        gather.say(full_message, language=language)
         response.append(gather)
-        response.say("We did not receive a response. Goodbye.", language="en-US")
+        response.say(strings["no_response"], language=language)
 
         try:
             call = self.client.calls.create(
@@ -67,5 +83,6 @@ def initiate_escalation_call(
     to_number: str,
     text_to_say: str,
     incident_id: str,
+    language: str = "en-US",
 ) -> Optional[str]:
-    return twilio_service.initiate_escalation_call(to_number, text_to_say, incident_id)
+    return twilio_service.initiate_escalation_call(to_number, text_to_say, incident_id, language)

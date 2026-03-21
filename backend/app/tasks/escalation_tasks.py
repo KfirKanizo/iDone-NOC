@@ -44,6 +44,7 @@ def process_escalation_step(self, incident_id: str):
         
         level = incident.current_escalation_level
         contact = policy.get_contact_for_level(level)
+        language = getattr(contact, 'language', 'en-US')
         
         if not contact:
             logger.warning(f"No contact found for level {level} in policy {policy.id}")
@@ -75,6 +76,7 @@ def process_escalation_step(self, incident_id: str):
             to_number=contact.phone_number,
             text_to_say=tts_message,
             incident_id=str(incident.id),
+            language=language,
         )
         
         log_entry = IncidentLog(

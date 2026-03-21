@@ -17,6 +17,7 @@ class ContactCreate(BaseModel):
     email: str
     phone_number: str
     is_active: bool = True
+    language: str = "en-US"
 
 
 class ContactResponse(BaseModel):
@@ -26,6 +27,7 @@ class ContactResponse(BaseModel):
     email: str
     phone_number: str
     is_active: bool
+    language: str
 
     class Config:
         from_attributes = True
@@ -36,6 +38,7 @@ class ContactUpdate(BaseModel):
     email: Optional[str] = None
     phone_number: Optional[str] = None
     is_active: Optional[bool] = None
+    language: Optional[str] = None
 
 
 @router.get("", response_model=List[ContactResponse])
@@ -56,6 +59,7 @@ def list_contacts(
             email=c.email,
             phone_number=c.phone_number,
             is_active=c.is_active,
+            language=c.language,
         ) for c in contacts
     ]
 
@@ -76,6 +80,7 @@ def create_contact(
         email=contact_data.email,
         phone_number=contact_data.phone_number,
         is_active=contact_data.is_active,
+        language=contact_data.language,
     )
     db.add(contact)
     db.commit()
@@ -87,6 +92,7 @@ def create_contact(
         email=contact.email,
         phone_number=contact.phone_number,
         is_active=contact.is_active,
+        language=contact.language,
     )
 
 
@@ -106,6 +112,7 @@ def get_contact(
         email=contact.email,
         phone_number=contact.phone_number,
         is_active=contact.is_active,
+        language=contact.language,
     )
 
 
@@ -128,6 +135,8 @@ def update_contact(
         contact.phone_number = contact_data.phone_number
     if contact_data.is_active is not None:
         contact.is_active = contact_data.is_active
+    if contact_data.language is not None:
+        contact.language = contact_data.language
     
     db.commit()
     db.refresh(contact)
@@ -138,6 +147,7 @@ def update_contact(
         email=contact.email,
         phone_number=contact.phone_number,
         is_active=contact.is_active,
+        language=contact.language,
     )
 
 
