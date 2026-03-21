@@ -58,6 +58,7 @@ def process_escalation_step(self, incident_id: str):
                 to_email=contact.email,
                 incident_id=str(incident.id),
                 incident_details=incident_details,
+                contact_id=str(contact.id),
             )
             
             log_entry = IncidentLog(

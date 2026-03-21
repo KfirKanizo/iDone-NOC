@@ -46,20 +46,28 @@ def send_incident_alert_email(
     to_email: str,
     incident_id: str,
     incident_details: str,
+    contact_id: str,
 ) -> bool:
     subject = f"🔴 NOC Alert: Incident {incident_id[:8]}"
+    
+    base_url = settings.BASE_URL.rstrip("/") if settings.BASE_URL else ""
+    ack_url = f"{base_url}/api/v1/incidents/{incident_id}/quick-action?action=ack&contact_id={contact_id}"
+    resolve_url = f"{base_url}/api/v1/incidents/{incident_id}/quick-action?action=resolve&contact_id={contact_id}"
+    
     body = f"""NOC Incident Alert
 
 Incident ID: {incident_id}
 Details: {incident_details}
 
-Please acknowledge this incident by pressing 1 when you receive the phone call.
+You can acknowledge or resolve this incident:
+- Acknowledge: {ack_url}
+- Resolve: {resolve_url}
 
 ---
 NOC Platform
 """
 
-    html_body = """<!DOCTYPE html>
+    html_body = f"""<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
@@ -113,15 +121,34 @@ NOC Platform
       font-weight: bold;
       margin-bottom: 15px;
     }}
-    .call-to-action {{
-      text-align: center;
+    .button-container {{
+      display: flex;
+      gap: 16px;
+      justify-content: center;
       margin: 28px 0;
-      padding: 15px;
-      background: #fff3cd;
-      color: #856404;
-      border-radius: 6px;
+    }}
+    .btn {{
+      display: inline-block;
+      padding: 14px 28px;
+      border-radius: 8px;
+      text-decoration: none;
       font-weight: bold;
-      border: 1px solid #ffeeba;
+      font-size: 16px;
+      transition: all 0.2s;
+    }}
+    .btn-acknowledge {{
+      background: #3b82f6;
+      color: white;
+    }}
+    .btn-acknowledge:hover {{
+      background: #2563eb;
+    }}
+    .btn-resolve {{
+      background: #10b981;
+      color: white;
+    }}
+    .btn-resolve:hover {{
+      background: #059669;
     }}
     .footer {{
       margin-top: 40px;
@@ -147,14 +174,15 @@ NOC Platform
       <div class="error-title">📋 Incident Details</div>
       <div class="content" style="white-space: pre-wrap; text-align: left; font-family: monospace; font-size: 15px; margin-bottom: 0;">{incident_details}</div>
     </div>
-    <div class="call-to-action">
-      📞 Please acknowledge this incident by pressing 1 when you receive the phone call.
+    <div class="button-container">
+      <a href="{ack_url}" class="btn btn-acknowledge">✅ Acknowledge</a>
+      <a href="{resolve_url}" class="btn btn-resolve">✓ Resolve</a>
     </div>
     <div class="footer">
       <b>NOC Platform - iDone Team</b>
     </div>
   </div>
 </body>
-</html>""".format(incident_id=incident_id, incident_details=incident_details)
+</html>"""
 
     return send_email(to_email, subject, body, html_body=html_body)
