@@ -14,7 +14,7 @@ LANGUAGE_STRINGS = {
         "no_response": "We did not receive a response. Goodbye.",
     },
     "he-IL": {
-        "prefix": "התראת נוק חדשה ממערכת הNOC של iDone.",
+        "prefix": "התראת נוק חדשה ממערכת הנוק של iDone.",
         "suffix": "אנא הקש 1 לאישור קבלת ההתראה.",
         "no_response": "לא קיבלנו מענה. להתראות.",
     },
