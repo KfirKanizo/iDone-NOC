@@ -16,6 +16,7 @@ class Contact(Base):
     email = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=False)
     is_active = Column(Boolean, default=True)
+    is_deleted = Column(Boolean, default=False)
     language = Column(String(10), default="en-US")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

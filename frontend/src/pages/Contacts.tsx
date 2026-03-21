@@ -17,6 +17,7 @@ interface Contact {
   email: string;
   phone_number: string;
   is_active: boolean;
+  is_deleted: boolean;
   language: string;
 }
 
@@ -244,7 +245,10 @@ export default function Contacts() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {contacts.map((contact) => (
-                    <tr key={contact.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr 
+                      key={contact.id} 
+                      className={`hover:bg-slate-50/80 transition-colors ${!contact.is_active ? 'opacity-60 italic' : ''}`}
+                    >
                       <td className="table-cell">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center">
@@ -273,7 +277,7 @@ export default function Contacts() {
                       </td>
                       <td className="table-cell">
                         <span className={contact.is_active ? 'badge-success' : 'badge-neutral'}>
-                          {contact.is_active ? 'Active' : 'Inactive'}
+                          {contact.is_active ? 'Active' : 'Disabled'}
                         </span>
                       </td>
                       <td className="table-cell">

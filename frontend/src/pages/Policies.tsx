@@ -14,6 +14,7 @@ interface Contact {
   id: string;
   client_id: string;
   full_name: string;
+  is_active: boolean;
 }
 
 interface Policy {
@@ -239,7 +240,8 @@ export default function Policies() {
   };
 
   const selectedClientName = getSelectedClientName();
-  const clientContacts = contacts.filter(c => c.client_id === formData.client_id);
+  const clientContacts = contacts.filter(c => c.client_id === formData.client_id && c.is_active);
+  const inactiveContacts = contacts.filter(c => c.client_id === formData.client_id && !c.is_active);
 
   return (
     <Layout>
@@ -470,6 +472,11 @@ export default function Policies() {
                                 <option value="">Select contact (optional)</option>
                                 {clientContacts.map(contact => (
                                   <option key={contact.id} value={contact.id}>{contact.full_name}</option>
+                                ))}
+                                {inactiveContacts.map(contact => (
+                                  <option key={contact.id} value={contact.id} disabled>
+                                    {contact.full_name} (Inactive)
+                                  </option>
                                 ))}
                               </select>
                             </div>

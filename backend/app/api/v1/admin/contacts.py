@@ -28,6 +28,7 @@ class ContactResponse(BaseModel):
     email: str
     phone_number: str
     is_active: bool
+    is_deleted: bool
     language: str
 
     class Config:
@@ -42,6 +43,19 @@ class ContactUpdate(BaseModel):
     language: Optional[str] = None
 
 
+def check_linked_policies(db: Session, contact_uuid: uuid.UUID) -> Optional[List[EscalationPolicy]]:
+    return db.query(EscalationPolicy).filter(
+        or_(
+            EscalationPolicy.level_0_contact_id == contact_uuid,
+            EscalationPolicy.level_1_contact_id == contact_uuid,
+            EscalationPolicy.level_2_contact_id == contact_uuid,
+            EscalationPolicy.level_3_contact_id == contact_uuid,
+            EscalationPolicy.level_4_contact_id == contact_uuid,
+            EscalationPolicy.level_5_contact_id == contact_uuid,
+        )
+    ).all()
+
+
 @router.get("", response_model=List[ContactResponse])
 def list_contacts(
     client_id: Optional[str] = Query(None),
@@ -51,6 +65,9 @@ def list_contacts(
     query = db.query(Contact)
     if client_id:
         query = query.filter(Contact.client_id == uuid.UUID(client_id))
+    
+    query = query.filter(Contact.is_deleted == False)
+    
     contacts = query.all()
     return [
         ContactResponse(
@@ -60,6 +77,7 @@ def list_contacts(
             email=c.email,
             phone_number=c.phone_number,
             is_active=c.is_active,
+            is_deleted=c.is_deleted,
             language=c.language,
         ) for c in contacts
     ]
@@ -81,6 +99,7 @@ def create_contact(
         email=contact_data.email,
         phone_number=contact_data.phone_number,
         is_active=contact_data.is_active,
+        is_deleted=False,
         language=contact_data.language,
     )
     db.add(contact)
@@ -93,6 +112,7 @@ def create_contact(
         email=contact.email,
         phone_number=contact.phone_number,
         is_active=contact.is_active,
+        is_deleted=contact.is_deleted,
         language=contact.language,
     )
 
@@ -113,6 +133,7 @@ def get_contact(
         email=contact.email,
         phone_number=contact.phone_number,
         is_active=contact.is_active,
+        is_deleted=contact.is_deleted,
         language=contact.language,
     )
 
@@ -134,8 +155,22 @@ def update_contact(
         contact.email = contact_data.email
     if contact_data.phone_number is not None:
         contact.phone_number = contact_data.phone_number
-    if contact_data.is_active is not None:
-        contact.is_active = contact_data.is_active
+    
+    if contact_data.is_active is not None and contact_data.is_active == False:
+        contact_uuid = uuid.UUID(contact_id)
+        linked_policies = check_linked_policies(db, contact_uuid)
+        
+        if linked_policies:
+            policy_names = ", ".join([p.name for p in linked_policies])
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot deactivate contact because it is assigned to escalation policy: {policy_names}. Please remove this contact from the policy first."
+            )
+        contact.is_active = False
+    
+    if contact_data.is_active is not None and contact_data.is_active == True:
+        contact.is_active = True
+    
     if contact_data.language is not None:
         contact.language = contact_data.language
     
@@ -148,6 +183,7 @@ def update_contact(
         email=contact.email,
         phone_number=contact.phone_number,
         is_active=contact.is_active,
+        is_deleted=contact.is_deleted,
         language=contact.language,
     )
 
@@ -163,16 +199,7 @@ def delete_contact(
         raise HTTPException(status_code=404, detail="Contact not found")
     
     contact_uuid = uuid.UUID(contact_id)
-    linked_policies = db.query(EscalationPolicy).filter(
-        or_(
-            EscalationPolicy.level_0_contact_id == contact_uuid,
-            EscalationPolicy.level_1_contact_id == contact_uuid,
-            EscalationPolicy.level_2_contact_id == contact_uuid,
-            EscalationPolicy.level_3_contact_id == contact_uuid,
-            EscalationPolicy.level_4_contact_id == contact_uuid,
-            EscalationPolicy.level_5_contact_id == contact_uuid,
-        )
-    ).all()
+    linked_policies = check_linked_policies(db, contact_uuid)
     
     if linked_policies:
         policy_names = ", ".join([p.name for p in linked_policies])
@@ -181,6 +208,6 @@ def delete_contact(
             detail=f"Cannot delete contact because it is assigned to escalation policy: {policy_names}. Please remove this contact from the policy first."
         )
     
-    contact.is_active = False
+    contact.is_deleted = True
     db.commit()
-    return {"message": "Contact deactivated"}
+    return {"message": "Contact deleted"}
