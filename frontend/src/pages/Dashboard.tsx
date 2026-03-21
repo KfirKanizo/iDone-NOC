@@ -96,9 +96,10 @@ export default function Dashboard() {
   const loadFilteredData = async () => {
     setLoading(true);
     try {
-      const params: { client_id?: string; status?: string; limit?: number } = { limit: 100 };
+      const params: { client_id?: string; status?: string; limit?: number; time_range?: string } = { limit: 100 };
       if (filters.client_id) params.client_id = filters.client_id;
       if (filters.status) params.status = filters.status;
+      if (filters.time_range) params.time_range = filters.time_range;
       
       const [incidentsData, statsData] = await Promise.all([
         getIncidents(params),

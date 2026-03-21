@@ -138,7 +138,7 @@ export const deletePolicy = async (id: string) => {
   return response.data;
 };
 
-export const getIncidents = async (params?: { client_id?: string; status?: string; limit?: number; offset?: number }) => {
+export const getIncidents = async (params?: { client_id?: string; status?: string; limit?: number; offset?: number; time_range?: string }) => {
   const response = await api.get('/api/v1/admin/incidents', { params });
   return response.data;
 };

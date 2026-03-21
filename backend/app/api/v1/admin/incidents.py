@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 
 from app.database import get_db
@@ -42,12 +42,27 @@ class IncidentLogResponse(BaseModel):
 def list_incidents(
     client_id: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    time_range: Optional[str] = Query(None),
     limit: int = Query(100),
     offset: int = Query(0),
     db: Session = Depends(get_db),
     admin: dict = Depends(get_current_admin),
 ):
     query = db.query(Incident)
+    
+    if time_range is not None:
+        now = datetime.utcnow()
+        if time_range == "today":
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif time_range == "last_7_days":
+            start_date = now - timedelta(days=7)
+        elif time_range == "last_30_days":
+            start_date = now - timedelta(days=30)
+        else:
+            start_date = None
+        
+        if start_date is not None:
+            query = query.filter(Incident.created_at >= start_date)
     
     if client_id:
         query = query.filter(Incident.client_id == uuid.UUID(client_id))
