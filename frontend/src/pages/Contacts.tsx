@@ -16,6 +16,7 @@ interface Contact {
   email: string;
   phone_number: string;
   is_active: boolean;
+  language: string;
 }
 
 export default function Contacts() {
@@ -31,6 +32,7 @@ export default function Contacts() {
     email: '',
     phone_number: '',
     is_active: true,
+    language: 'en-US',
   });
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
@@ -64,6 +66,7 @@ export default function Contacts() {
       email: '',
       phone_number: '',
       is_active: true,
+      language: 'en-US',
     });
     setEditingContact(null);
     setIsEditMode(false);
@@ -77,6 +80,7 @@ export default function Contacts() {
       email: contact.email,
       phone_number: contact.phone_number,
       is_active: contact.is_active,
+      language: contact.language || 'en-US',
     });
     setEditingContact(contact);
     setIsEditMode(true);
@@ -93,6 +97,7 @@ export default function Contacts() {
       email: '',
       phone_number: '',
       is_active: true,
+      language: 'en-US',
     });
   };
 
@@ -181,6 +186,7 @@ export default function Contacts() {
                     <th className="table-header">Client</th>
                     <th className="table-header">Email</th>
                     <th className="table-header">Phone</th>
+                    <th className="table-header">Language</th>
                     <th className="table-header">Status</th>
                     <th className="table-header">Actions</th>
                   </tr>
@@ -208,6 +214,11 @@ export default function Contacts() {
                           <Phone className="w-4 h-4 text-slate-400" />
                           <code className="text-xs">{contact.phone_number}</code>
                         </div>
+                      </td>
+                      <td className="table-cell">
+                        <span className={contact.language === 'he-IL' ? 'badge-warning' : 'badge-info'}>
+                          {contact.language === 'he-IL' ? 'עברית' : 'English'}
+                        </span>
                       </td>
                       <td className="table-cell">
                         <span className={contact.is_active ? 'badge-success' : 'badge-neutral'}>
@@ -308,6 +319,17 @@ export default function Contacts() {
                     className="input-field"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Language</label>
+                  <select
+                    value={formData.language}
+                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                    className="select-field"
+                  >
+                    <option value="en-US">English (en-US)</option>
+                    <option value="he-IL">Hebrew (he-IL)</option>
+                  </select>
                 </div>
                 <div>
                   <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">

@@ -70,6 +70,7 @@ export const createContact = async (data: {
   email: string;
   phone_number: string;
   is_active: boolean;
+  language: string;
 }) => {
   const response = await api.post('/api/v1/admin/contacts', data);
   return response.data;
@@ -80,6 +81,7 @@ export const updateContact = async (id: string, data: {
   email?: string;
   phone_number?: string;
   is_active?: boolean;
+  language?: string;
 }) => {
   const response = await api.put(`/api/v1/admin/contacts/${id}`, data);
   return response.data;
