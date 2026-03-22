@@ -156,9 +156,11 @@ export default function Contacts() {
       setContacts(contacts.map(c => c.id === editingContact.id ? { ...c, ...updated } : c));
       closeModal();
       showToast('success', 'Contact updated successfully');
-    } catch (err) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      const message = error.response?.data?.detail || error.message || 'Failed to update contact';
       console.error('Failed to update contact', err);
-      showToast('error', 'Failed to update contact');
+      showToast('error', message);
     } finally {
       setSubmitting(false);
     }
