@@ -204,9 +204,11 @@ export default function Policies() {
       setPolicies(policies.map(p => p.id === editingPolicy.id ? { ...p, ...updated } : p));
       closeModal();
       showToast('success', 'Policy updated successfully');
-    } catch (err) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      const message = error.response?.data?.detail || error.message || 'Failed to update policy';
       console.error('Failed to update policy', err);
-      showToast('error', 'Failed to update policy');
+      showToast('error', message);
     } finally {
       setSubmitting(false);
     }

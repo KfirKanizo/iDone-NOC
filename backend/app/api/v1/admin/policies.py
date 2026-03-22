@@ -177,18 +177,35 @@ def update_policy(
         policy.retry_delay_seconds = policy_data.retry_delay_seconds
     if policy_data.tts_message_template is not None:
         policy.tts_message_template = policy_data.tts_message_template
-    if policy_data.level_0_contact_id is not None:
-        policy.level_0_contact_id = uuid.UUID(policy_data.level_0_contact_id) if policy_data.level_0_contact_id else None
-    if policy_data.level_1_contact_id is not None:
-        policy.level_1_contact_id = uuid.UUID(policy_data.level_1_contact_id) if policy_data.level_1_contact_id else None
-    if policy_data.level_2_contact_id is not None:
-        policy.level_2_contact_id = uuid.UUID(policy_data.level_2_contact_id) if policy_data.level_2_contact_id else None
-    if policy_data.level_3_contact_id is not None:
-        policy.level_3_contact_id = uuid.UUID(policy_data.level_3_contact_id) if policy_data.level_3_contact_id else None
-    if policy_data.level_4_contact_id is not None:
-        policy.level_4_contact_id = uuid.UUID(policy_data.level_4_contact_id) if policy_data.level_4_contact_id else None
-    if policy_data.level_5_contact_id is not None:
-        policy.level_5_contact_id = uuid.UUID(policy_data.level_5_contact_id) if policy_data.level_5_contact_id else None
+    if policy_data.level_0_contact_id is not None and policy_data.level_0_contact_id != "":
+        policy.level_0_contact_id = uuid.UUID(policy_data.level_0_contact_id)
+    elif policy_data.level_0_contact_id is None or policy_data.level_0_contact_id == "":
+        policy.level_0_contact_id = None
+    
+    if policy_data.level_1_contact_id is not None and policy_data.level_1_contact_id != "":
+        policy.level_1_contact_id = uuid.UUID(policy_data.level_1_contact_id)
+    elif policy_data.level_1_contact_id is None or policy_data.level_1_contact_id == "":
+        policy.level_1_contact_id = None
+    
+    if policy_data.level_2_contact_id is not None and policy_data.level_2_contact_id != "":
+        policy.level_2_contact_id = uuid.UUID(policy_data.level_2_contact_id)
+    elif policy_data.level_2_contact_id is None or policy_data.level_2_contact_id == "":
+        policy.level_2_contact_id = None
+    
+    if policy_data.level_3_contact_id is not None and policy_data.level_3_contact_id != "":
+        policy.level_3_contact_id = uuid.UUID(policy_data.level_3_contact_id)
+    elif policy_data.level_3_contact_id is None or policy_data.level_3_contact_id == "":
+        policy.level_3_contact_id = None
+    
+    if policy_data.level_4_contact_id is not None and policy_data.level_4_contact_id != "":
+        policy.level_4_contact_id = uuid.UUID(policy_data.level_4_contact_id)
+    elif policy_data.level_4_contact_id is None or policy_data.level_4_contact_id == "":
+        policy.level_4_contact_id = None
+    
+    if policy_data.level_5_contact_id is not None and policy_data.level_5_contact_id != "":
+        policy.level_5_contact_id = uuid.UUID(policy_data.level_5_contact_id)
+    elif policy_data.level_5_contact_id is None or policy_data.level_5_contact_id == "":
+        policy.level_5_contact_id = None
     if policy_data.is_active is not None:
         policy.is_active = policy_data.is_active
     
