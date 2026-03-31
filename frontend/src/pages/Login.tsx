@@ -1,23 +1,34 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../api/client';
+import { login, decodeToken } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { Shield, LogIn, AlertCircle } from 'lucide-react';
 
 export default function Login() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setAuth } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const data = await login(username, password);
-      localStorage.setItem('token', data.access_token);
-      navigate('/dashboard');
+      const data = await login(email, password);
+      const user = decodeToken(data.access_token);
+      if (user) {
+        setAuth(data.access_token, user);
+        if (user.role === 'admin') {
+          navigate('/dashboard');
+        } else {
+          navigate('/portal/incidents');
+        }
+      } else {
+        setError('Failed to parse authentication response.');
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } };
       setError(error.response?.data?.detail || 'Login failed. Please check your credentials.');
@@ -100,18 +111,18 @@ export default function Login() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Username
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Email
                 </label>
                 <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="input-field"
-                  placeholder="Enter your username"
+                  placeholder="Enter your email"
                   required
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
 

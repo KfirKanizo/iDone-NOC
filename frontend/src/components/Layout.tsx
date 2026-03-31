@@ -9,12 +9,13 @@ import {
   Shield,
   BarChart3
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
+const adminNavItems = [
   { path: '/dashboard', label: 'Incidents', icon: LayoutDashboard },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/clients', label: 'Clients', icon: Users },
@@ -22,11 +23,20 @@ const navItems = [
   { path: '/policies', label: 'Policies', icon: FileText },
 ];
 
+const clientNavItems = [
+  { path: '/portal/incidents', label: 'Incidents', icon: LayoutDashboard },
+  { path: '/portal/contacts', label: 'Contacts', icon: Phone },
+  { path: '/portal/analytics', label: 'Analytics', icon: BarChart3 },
+];
+
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const { user, logout, isAdmin } = useAuth();
+
+  const navItems = isAdmin ? adminNavItems : clientNavItems;
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
     window.location.href = '/login';
   };
 
@@ -48,7 +58,7 @@ export default function Layout({ children }: LayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             const Icon = item.icon;
             return (
               <Link
@@ -69,6 +79,10 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* User Area */}
         <div className="px-3 py-4 border-t border-slate-800">
+          <div className="px-3 py-2 mb-2">
+            <p className="text-sm text-slate-400 truncate">{user?.email}</p>
+            <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
+          </div>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all duration-200"

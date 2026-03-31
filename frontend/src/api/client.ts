@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -22,14 +23,15 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
-export const login = async (username: string, password: string) => {
-  const response = await api.post('/api/v1/admin/auth/login', { username, password });
+export const login = async (email: string, password: string) => {
+  const response = await api.post('/api/v1/admin/auth/login', { email, password });
   return response.data;
 };
 
