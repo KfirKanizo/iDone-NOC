@@ -31,6 +31,7 @@ class Client(Base):
     contacts = relationship("Contact", back_populates="client", cascade="all, delete-orphan")
     escalation_policies = relationship("EscalationPolicy", back_populates="client", cascade="all, delete-orphan")
     incidents = relationship("Incident", back_populates="client", cascade="all, delete-orphan")
+    users = relationship("User", back_populates="client", cascade="all, delete-orphan")
 
     _api_key = None
 

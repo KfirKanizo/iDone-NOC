@@ -3,9 +3,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.database import get_db
+from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/auth", tags=["admin-auth"])
 security = HTTPBearer()
@@ -20,7 +23,7 @@ class Token(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 
@@ -36,14 +39,39 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 @router.post("/login", response_model=Token)
-def login(request: LoginRequest):
-    if request.username != settings.ADMIN_USERNAME or request.password != settings.ADMIN_PASSWORD:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-        )
-    
-    access_token = create_access_token(data={"sub": request.username})
+def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(
+        User.email == request.email,
+        User.is_active == True
+    ).first()
+
+    if user:
+        if not user.verify_password(request.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+            )
+        token_data = {
+            "sub": str(user.id),
+            "email": user.email,
+            "role": user.role.value,
+            "client_id": str(user.client_id) if user.client_id else None
+        }
+    else:
+        if request.email == settings.ADMIN_USERNAME and request.password == settings.ADMIN_PASSWORD:
+            token_data = {
+                "sub": "superadmin",
+                "email": settings.ADMIN_USERNAME,
+                "role": "admin",
+                "client_id": None
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+            )
+
+    access_token = create_access_token(data=token_data)
     return {"access_token": access_token, "token_type": "bearer"}
 
 

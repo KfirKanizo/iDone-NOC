@@ -3,6 +3,7 @@ from app.models.contact import Contact
 from app.models.escalation_policy import EscalationPolicy
 from app.models.incident import Incident, IncidentStatus
 from app.models.incident_log import IncidentLog, ActionType
+from app.models.user import User, UserRole
 
 __all__ = [
     "Client",
@@ -12,6 +13,8 @@ __all__ = [
     "IncidentStatus",
     "IncidentLog",
     "ActionType",
+    "User",
+    "UserRole",
     "generate_api_key",
     "hash_api_key",
 ]
