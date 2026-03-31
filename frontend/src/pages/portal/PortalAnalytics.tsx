@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, 
   Bar, 
@@ -15,8 +14,7 @@ import {
 } from 'recharts';
 import { 
   getPortalStats, 
-  getPortalCharts, 
-  getPortalIncidents,
+  getPortalCharts,
   type PortalDashboardStats,
   type PortalChartsData
 } from '../../api/portalClient';
@@ -25,7 +23,6 @@ import {
   Activity, 
   AlertTriangle, 
   Clock, 
-  CheckCircle,
   RefreshCw,
   TrendingUp
 } from 'lucide-react';
@@ -46,7 +43,6 @@ const STATUS_COLORS: Record<string, string> = {
 const CHART_COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
 
 export default function PortalAnalytics() {
-  const navigate = useNavigate();
   const { showToast } = useToast();
   const [stats, setStats] = useState<PortalDashboardStats | null>(null);
   const [chartsData, setChartsData] = useState<PortalChartsData | null>(null);

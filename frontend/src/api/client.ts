@@ -1,7 +1,20 @@
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+export const decodeToken = (token: string) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      client_id: payload.client_id
+    };
+  } catch {
+    return null;
+  }
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -7,8 +7,8 @@ import {
   resolvePortalIncident,
   type PortalIncident,
   type PortalIncidentLog
-} from '../api/portalClient';
-import { useToast } from '../components/Toast';
+} from '../../api/portalClient';
+import { useToast } from '../../components/Toast';
 import { 
   AlertTriangle, 
   CheckCircle, 
