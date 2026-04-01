@@ -217,6 +217,51 @@ export interface Client {
   company_name: string;
 }
 
+export type UserRole = 'admin' | 'client';
+
+export interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+  client_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface UserCreate {
+  email: string;
+  password: string;
+  role: UserRole;
+  client_id?: string;
+}
+
+export interface UserUpdate {
+  email?: string;
+  password?: string;
+  role?: UserRole;
+  client_id?: string | null;
+  is_active?: boolean;
+}
+
+export const getUsers = async (): Promise<User[]> => {
+  const response = await api.get('/v1/admin/users');
+  return response.data;
+};
+
+export const createUser = async (data: UserCreate): Promise<User> => {
+  const response = await api.post('/v1/admin/users', data);
+  return response.data;
+};
+
+export const updateUser = async (id: string, data: UserUpdate): Promise<User> => {
+  const response = await api.patch(`/v1/admin/users/${id}`, data);
+  return response.data;
+};
+
+export const deleteUser = async (id: string): Promise<void> => {
+  await api.delete(`/v1/admin/users/${id}`);
+};
+
 export const getDashboardStats = async (params?: {
   client_id?: string;
   status?: string;

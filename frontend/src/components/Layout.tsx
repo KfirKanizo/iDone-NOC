@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
+  UserCog,
   Phone, 
   FileText, 
   LogOut,
@@ -19,6 +20,7 @@ const adminNavItems = [
   { path: '/dashboard', label: 'Incidents', icon: LayoutDashboard },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/clients', label: 'Clients', icon: Users },
+  { path: '/users', label: 'Users', icon: UserCog },
   { path: '/contacts', label: 'Contacts', icon: Phone },
   { path: '/policies', label: 'Policies', icon: FileText },
 ];

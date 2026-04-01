@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Clients from './pages/Clients';
+import Users from './pages/Users';
 import Contacts from './pages/Contacts';
 import Policies from './pages/Policies';
 import Layout from './components/Layout';
@@ -82,6 +83,14 @@ function App() {
               element={
                 <AdminRoute>
                   <Clients />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <AdminRoute>
+                  <Users />
                 </AdminRoute>
               }
             />
