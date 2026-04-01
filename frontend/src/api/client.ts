@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const getBaseURL = () => {
+  if (import.meta.env.PROD) {
+    return '/api/v1';
+  }
+  return import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+};
 
 export const decodeToken = (token: string) => {
   try {
@@ -17,7 +22,7 @@ export const decodeToken = (token: string) => {
 };
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
