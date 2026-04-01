@@ -67,8 +67,21 @@ services:
       dockerfile: Dockerfile.nginx
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/www/certbot
     depends_on:
       - api
 
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $$!; done;'"
+
 volumes:
   postgres_data:
+  certbot_etc:
+  certbot_var:
