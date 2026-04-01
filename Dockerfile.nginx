@@ -10,20 +10,19 @@ RUN npm run build
 
 FROM nginx:alpine
 
-# Install certbot for SSL
-RUN apk add --no-cache certbot curl
+# Install certbot and openssl for SSL
+RUN apk add --no-cache certbot curl openssl bash
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY nginx/nginx.temp.conf /etc/nginx/nginx.temp.conf
+COPY nginx/start.sh /start.sh
 
 # Create directories for certbot
-RUN mkdir -p /var/www/certbot /etc/letsencrypt/live/noc.idone.co.il
+RUN mkdir -p /var/www/certbot /etc/letsencrypt/live/noc.idone.co.il && \
+    chmod +x /start.sh
 
 # Expose both HTTP and HTTPS
 EXPOSE 80 443
-
-# Use startup script to handle SSL certificates
-COPY nginx/start.sh /start.sh
-RUN chmod +x /start.sh
 
 CMD ["/start.sh"]
