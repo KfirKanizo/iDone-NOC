@@ -2,9 +2,9 @@ import axios from 'axios';
 
 const getBaseURL = () => {
   if (import.meta.env.PROD) {
-    return '/api/v1';
+    return '/api';
   }
-  return import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+  return import.meta.env.VITE_API_URL || 'http://localhost:8000';
 };
 
 export const portalApi = axios.create({
@@ -84,7 +84,7 @@ export const getPortalIncidents = async (params?: {
   offset?: number; 
   time_range?: string 
 }): Promise<PortalIncident[]> => {
-  const response = await portalApi.get('/api/v1/portal/incidents', { params });
+  const response = await portalApi.get('/v1/portal/incidents', { params });
   return response.data;
 };
 
@@ -109,17 +109,17 @@ export const resolvePortalIncident = async (id: string): Promise<PortalIncident>
 };
 
 export const getPortalStats = async (params?: { time_range?: string }): Promise<PortalDashboardStats> => {
-  const response = await portalApi.get('/api/v1/portal/stats', { params });
+  const response = await portalApi.get('/v1/portal/stats', { params });
   return response.data;
 };
 
 export const getPortalCharts = async (params?: { time_range?: string }): Promise<PortalChartsData> => {
-  const response = await portalApi.get('/api/v1/portal/charts', { params });
+  const response = await portalApi.get('/v1/portal/charts', { params });
   return response.data;
 };
 
 export const getPortalContacts = async (): Promise<PortalContact[]> => {
-  const response = await portalApi.get('/api/v1/portal/contacts');
+  const response = await portalApi.get('/v1/portal/contacts');
   return response.data;
 };
 
