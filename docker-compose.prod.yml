@@ -66,8 +66,8 @@ services:
       context: .
       dockerfile: Dockerfile.nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     volumes:
       - certbot_etc:/etc/letsencrypt
       - certbot_var:/var/www/certbot
