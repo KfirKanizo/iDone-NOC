@@ -84,47 +84,47 @@ export const getPortalIncidents = async (params?: {
   offset?: number; 
   time_range?: string 
 }): Promise<PortalIncident[]> => {
-  const response = await portalApi.get('/v1/portal/incidents', { params });
+  const response = await portalApi.get('/v1/portal/incidents/', { params });
   return response.data;
 };
 
 export const getPortalIncident = async (id: string): Promise<PortalIncident> => {
-  const response = await portalApi.get(`/api/v1/portal/incidents/${id}`);
+  const response = await portalApi.get(`/v1/portal/incidents/${id}/`);
   return response.data;
 };
 
 export const getPortalIncidentLogs = async (id: string): Promise<PortalIncidentLog[]> => {
-  const response = await portalApi.get(`/api/v1/portal/incidents/${id}/logs`);
+  const response = await portalApi.get(`/v1/portal/incidents/${id}/logs/`);
   return response.data;
 };
 
 export const acknowledgePortalIncident = async (id: string): Promise<PortalIncident> => {
-  const response = await portalApi.post(`/api/v1/portal/incidents/${id}/acknowledge`);
+  const response = await portalApi.post(`/v1/portal/incidents/${id}/acknowledge/`);
   return response.data;
 };
 
 export const resolvePortalIncident = async (id: string): Promise<PortalIncident> => {
-  const response = await portalApi.post(`/api/v1/portal/incidents/${id}/resolve`);
+  const response = await portalApi.post(`/v1/portal/incidents/${id}/resolve/`);
   return response.data;
 };
 
 export const getPortalStats = async (params?: { time_range?: string }): Promise<PortalDashboardStats> => {
-  const response = await portalApi.get('/v1/portal/stats', { params });
+  const response = await portalApi.get('/v1/portal/stats/', { params });
   return response.data;
 };
 
 export const getPortalCharts = async (params?: { time_range?: string }): Promise<PortalChartsData> => {
-  const response = await portalApi.get('/v1/portal/charts', { params });
+  const response = await portalApi.get('/v1/portal/charts/', { params });
   return response.data;
 };
 
 export const getPortalContacts = async (): Promise<PortalContact[]> => {
-  const response = await portalApi.get('/v1/portal/contacts');
+  const response = await portalApi.get('/v1/portal/contacts/');
   return response.data;
 };
 
 export const getPortalContact = async (id: string): Promise<PortalContact> => {
-  const response = await portalApi.get(`/api/v1/portal/contacts/${id}`);
+  const response = await portalApi.get(`/v1/portal/contacts/${id}/`);
   return response.data;
 };
 

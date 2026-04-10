@@ -49,38 +49,38 @@ api.interceptors.response.use(
 );
 
 export const login = async (email: string, password: string) => {
-  const response = await api.post('/v1/admin/auth/login', { email, password });
+  const response = await api.post('/v1/admin/auth/login/', { email, password });
   return response.data;
 };
 
 export const getClients = async () => {
-  const response = await api.get('/v1/admin/clients');
+  const response = await api.get('/v1/admin/clients/');
   return response.data;
 };
 
 export const createClient = async (data: { company_name: string; is_active: boolean }) => {
-  const response = await api.post('/v1/admin/clients', data);
+  const response = await api.post('/v1/admin/clients/', data);
   return response.data;
 };
 
 export const updateClient = async (id: string, data: { company_name?: string; is_active?: boolean }) => {
-  const response = await api.put(`/api/v1/admin/clients/${id}`, data);
+  const response = await api.put(`/v1/admin/clients/${id}/`, data);
   return response.data;
 };
 
 export const deleteClient = async (id: string) => {
-  const response = await api.delete(`/api/v1/admin/clients/${id}`);
+  const response = await api.delete(`/v1/admin/clients/${id}/`);
   return response.data;
 };
 
 export const regenerateClientKey = async (id: string) => {
-  const response = await api.post(`/api/v1/admin/clients/${id}/regenerate-key`);
+  const response = await api.post(`/v1/admin/clients/${id}/regenerate-key/`);
   return response.data;
 };
 
 export const getContacts = async (clientId?: string) => {
   const params = clientId ? { client_id: clientId } : {};
-  const response = await api.get('/v1/admin/contacts', { params });
+  const response = await api.get('/v1/admin/contacts/', { params });
   return response.data;
 };
 
@@ -92,7 +92,7 @@ export const createContact = async (data: {
   is_active: boolean;
   language: string;
 }) => {
-  const response = await api.post('/v1/admin/contacts', data);
+  const response = await api.post('/v1/admin/contacts/', data);
   return response.data;
 };
 
@@ -103,18 +103,18 @@ export const updateContact = async (id: string, data: {
   is_active?: boolean;
   language?: string;
 }) => {
-  const response = await api.put(`/api/v1/admin/contacts/${id}`, data);
+  const response = await api.put(`/v1/admin/contacts/${id}/`, data);
   return response.data;
 };
 
 export const deleteContact = async (id: string) => {
-  const response = await api.delete(`/api/v1/admin/contacts/${id}`);
+  const response = await api.delete(`/v1/admin/contacts/${id}/`);
   return response.data;
 };
 
 export const getPolicies = async (clientId?: string) => {
   const params = clientId ? { client_id: clientId } : {};
-  const response = await api.get('/v1/admin/policies', { params });
+  const response = await api.get('/v1/admin/policies/', { params });
   return response.data;
 };
 
@@ -132,7 +132,7 @@ export const createPolicy = async (data: {
   level_5_contact_id?: string;
   is_active: boolean;
 }) => {
-  const response = await api.post('/v1/admin/policies', data);
+  const response = await api.post('/v1/admin/policies/', data);
   return response.data;
 };
 
@@ -149,37 +149,37 @@ export const updatePolicy = async (id: string, data: Partial<{
   level_5_contact_id: string;
   is_active: boolean;
 }>) => {
-  const response = await api.put(`/api/v1/admin/policies/${id}`, data);
+  const response = await api.put(`/v1/admin/policies/${id}/`, data);
   return response.data;
 };
 
 export const deletePolicy = async (id: string) => {
-  const response = await api.delete(`/api/v1/admin/policies/${id}`);
+  const response = await api.delete(`/v1/admin/policies/${id}/`);
   return response.data;
 };
 
 export const getIncidents = async (params?: { client_id?: string; status?: string; limit?: number; offset?: number; time_range?: string }) => {
-  const response = await api.get('/v1/admin/incidents', { params });
+  const response = await api.get('/v1/admin/incidents/', { params });
   return response.data;
 };
 
 export const createIncident = async (data: { client_id: string; details: string; policy_id?: string }) => {
-  const response = await api.post('/v1/admin/incidents', data);
+  const response = await api.post('/v1/admin/incidents/', data);
   return response.data;
 };
 
 export const acknowledgeIncident = async (id: string) => {
-  const response = await api.post(`/api/v1/admin/incidents/${id}/acknowledge`);
+  const response = await api.post(`/v1/admin/incidents/${id}/acknowledge/`);
   return response.data;
 };
 
 export const resolveIncident = async (id: string) => {
-  const response = await api.post(`/api/v1/admin/incidents/${id}/resolve`);
+  const response = await api.post(`/v1/admin/incidents/${id}/resolve/`);
   return response.data;
 };
 
 export const getIncidentLogs = async (incidentId: string) => {
-  const response = await api.get(`/api/v1/admin/incidents/${incidentId}/logs`);
+  const response = await api.get(`/v1/admin/incidents/${incidentId}/logs/`);
   return response.data;
 };
 
@@ -244,22 +244,22 @@ export interface UserUpdate {
 }
 
 export const getUsers = async (): Promise<User[]> => {
-  const response = await api.get('/v1/admin/users');
+  const response = await api.get('/v1/admin/users/');
   return response.data;
 };
 
 export const createUser = async (data: UserCreate): Promise<User> => {
-  const response = await api.post('/v1/admin/users', data);
+  const response = await api.post('/v1/admin/users/', data);
   return response.data;
 };
 
 export const updateUser = async (id: string, data: UserUpdate): Promise<User> => {
-  const response = await api.patch(`/v1/admin/users/${id}`, data);
+  const response = await api.patch(`/v1/admin/users/${id}/`, data);
   return response.data;
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
-  await api.delete(`/v1/admin/users/${id}`);
+  await api.delete(`/v1/admin/users/${id}/`);
 };
 
 export const getDashboardStats = async (params?: {
@@ -267,7 +267,7 @@ export const getDashboardStats = async (params?: {
   status?: string;
   time_range?: string;
 }): Promise<DashboardStats> => {
-  const response = await api.get('/v1/analytics/dashboard-stats', { params });
+  const response = await api.get('/v1/analytics/dashboard-stats/', { params });
   return response.data;
 };
 
@@ -275,7 +275,7 @@ export const getChartsData = async (params?: {
   client_id?: string;
   time_range?: string;
 }): Promise<ChartsData> => {
-  const response = await api.get('/v1/analytics/charts', { params });
+  const response = await api.get('/v1/analytics/charts/', { params });
   return response.data;
 };
 
