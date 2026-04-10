@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident, getDashboardStats } from '../api/client';
+import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident, getDashboardStats, getPolicies, getContacts } from '../api/client';
 import type { DashboardStats, Client } from '../api/client';
+import { renderLogDetails, formatLogDetailValue, type Policy, type Contact } from '../utils/logFormatter';
 import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
 import { Eye, AlertTriangle, CheckCircle, Clock, Activity, Bell, Plus, X, RefreshCw } from 'lucide-react';
@@ -48,6 +49,8 @@ const statusOptions = [
 export default function Dashboard() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [logs, setLogs] = useState<IncidentLog[]>([]);
@@ -163,8 +166,19 @@ export default function Dashboard() {
     setSelectedIncident(incident);
     setLogsLoading(true);
     try {
-      const data = await getIncidentLogs(incident.id);
-      setLogs(data);
+      const [logsData, policiesData, contactsData] = await Promise.all([
+        getIncidentLogs(incident.id),
+        getPolicies(),
+        getContacts(),
+      ]);
+      setLogs(logsData);
+      setPolicies(policiesData.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
+      setContacts(contactsData.map((c: { id: string; full_name: string; email: string; phone_number: string }) => ({ 
+        id: c.id, 
+        full_name: c.full_name, 
+        email: c.email, 
+        phone_number: c.phone_number 
+      })));
     } catch (err) {
       console.error('Failed to load logs', err);
     } finally {
@@ -440,18 +454,28 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {logs.map((log) => (
-                      <div key={log.id} className="relative pl-4 pb-4 border-l-2 border-primary-200 last:pb-0">
-                        <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-primary-500" />
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-sm text-slate-900">{log.action_type}</span>
-                          <span className="text-xs text-slate-400">{new Date(log.created_at).toLocaleString()}</span>
+                    {logs.map((log) => {
+                      const formattedDetails = renderLogDetails(log.details, log.action_type, policies, contacts);
+                      return (
+                        <div key={log.id} className="relative pl-4 pb-4 border-l-2 border-primary-200 last:pb-0">
+                          <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-primary-500" />
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm text-slate-900">{log.action_type}</span>
+                            <span className="text-xs text-slate-400">{new Date(log.created_at).toLocaleString()}</span>
+                          </div>
+                          {formattedDetails.length > 0 && (
+                            <div className="bg-slate-50 p-3 rounded-lg space-y-1">
+                              {formattedDetails.map((item, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                  <span className="font-semibold text-slate-700 shrink-0">{item.label}:</span>
+                                  {formatLogDetailValue(item.value, item.muted)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <pre className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg overflow-x-auto">
-                          {JSON.stringify(log.details, null, 2)}
-                        </pre>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {logs.length === 0 && (
                       <p className="text-center text-slate-500 py-4">No logs found for this incident</p>
                     )}

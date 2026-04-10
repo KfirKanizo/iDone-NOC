@@ -3,11 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   getPortalIncident, 
   getPortalIncidentLogs,
+  getPortalContacts,
   acknowledgePortalIncident,
   resolvePortalIncident,
   type PortalIncident,
-  type PortalIncidentLog
+  type PortalIncidentLog,
+  type PortalContact
 } from '../../api/portalClient';
+import { renderLogDetails, formatLogDetailValue } from '../../utils/logFormatter';
 import { useToast } from '../../components/Toast';
 import { 
   AlertTriangle, 
@@ -54,6 +57,7 @@ export default function PortalIncidentDetails() {
   const { showToast } = useToast();
   const [incident, setIncident] = useState<PortalIncident | null>(null);
   const [logs, setLogs] = useState<PortalIncidentLog[]>([]);
+  const [contacts, setContacts] = useState<PortalContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -67,12 +71,14 @@ export default function PortalIncidentDetails() {
     if (!id) return;
     setLoading(true);
     try {
-      const [incidentData, logsData] = await Promise.all([
+      const [incidentData, logsData, contactsData] = await Promise.all([
         getPortalIncident(id),
         getPortalIncidentLogs(id),
+        getPortalContacts(),
       ]);
       setIncident(incidentData);
       setLogs(logsData);
+      setContacts(contactsData);
     } catch (err) {
       console.error('Failed to load incident', err);
       showToast('error', 'Failed to load incident details');
@@ -255,9 +261,21 @@ export default function PortalIncidentDetails() {
                               {new Date(log.created_at).toLocaleString()}
                             </p>
                             {log.details && Object.keys(log.details).length > 0 && (
-                              <pre className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg overflow-x-auto">
-                                {JSON.stringify(log.details, null, 2)}
-                              </pre>
+                              <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1.5">
+                                {renderLogDetails(
+                                  log.details as Record<string, unknown>,
+                                  log.action_type,
+                                  [],
+                                  contacts
+                                ).map((item, idx) => (
+                                  <div key={idx} className="flex gap-4">
+                                    <span className="text-slate-500 min-w-[100px]">{item.label}:</span>
+                                    <span className={item.muted ? 'text-slate-400' : 'text-slate-700'}>
+                                      {formatLogDetailValue(item.value, item.muted)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </div>
                         </div>
