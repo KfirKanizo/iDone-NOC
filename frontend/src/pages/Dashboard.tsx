@@ -438,7 +438,7 @@ export default function Dashboard() {
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">Incident Logs</h3>
-                  <p className="text-sm text-slate-500 font-mono mt-0.5">{selectedIncident.id.slice(0, 8)}</p>
+                  <p className="text-sm text-slate-500 font-mono mt-0.5">{selectedIncident.id}</p>
                 </div>
                 <button
                   onClick={() => setSelectedIncident(null)}

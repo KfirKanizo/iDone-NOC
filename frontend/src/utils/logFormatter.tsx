@@ -41,13 +41,13 @@ export function renderLogDetails(
         const policy = policies.find(p => p.id === details.policy_id);
         items.push({
           label: 'Policy',
-          value: policy ? policy.name : String(details.policy_id).slice(0, 8),
+          value: policy ? policy.name : String(details.policy_id),
         });
       }
       if (details.client_id) {
         items.push({
           label: 'Client ID',
-          value: String(details.client_id).slice(0, 8),
+          value: String(details.client_id),
         });
       }
       break;
@@ -58,7 +58,7 @@ export function renderLogDetails(
         const contact = contacts.find(c => c.id === details.contact_id);
         items.push({
           label: 'Contact',
-          value: contact ? contact.full_name : String(details.contact_id).slice(0, 8),
+          value: contact ? contact.full_name : String(details.contact_id),
         });
       }
       if (details.email) {
@@ -81,7 +81,7 @@ export function renderLogDetails(
         const contact = contacts.find(c => c.id === details.contact_id);
         items.push({
           label: 'Contact',
-          value: contact ? contact.full_name : String(details.contact_id).slice(0, 8),
+          value: contact ? contact.full_name : String(details.contact_id),
         });
       }
       if (details.phone_number) {
@@ -161,7 +161,7 @@ export function renderLogDetails(
         const contact = contacts.find(c => c.id === details.contact_id);
         items.push({
           label: 'Resolved by',
-          value: contact ? contact.full_name : String(details.contact_id).slice(0, 8),
+          value: contact ? contact.full_name : String(details.contact_id),
         });
       }
       break;
