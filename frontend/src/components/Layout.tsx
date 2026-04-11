@@ -7,7 +7,6 @@ import {
   Phone, 
   FileText, 
   LogOut,
-  Shield,
   BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -48,13 +47,7 @@ export default function Layout({ children }: LayoutProps) {
       <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 flex flex-col z-50">
         {/* Logo Area */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-          <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-600/30">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white tracking-tight">iDone</h1>
-            <p className="text-xs text-slate-400 font-medium">NOC Platform</p>
-          </div>
+          <img src="/images/logo.jpg" alt="iDone NOC" className="h-10 w-auto object-contain" />
         </div>
 
         {/* Navigation */}
@@ -97,7 +90,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Main Content */}
       <main className="flex-1 ml-64">
-        <div className="p-8">
+        <div className="p-6">
           {children}
         </div>
       </main>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login, decodeToken } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Shield, LogIn, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -43,18 +43,16 @@ export default function Login() {
       <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-primary-500 rounded-full mix-blend-multiply filter blur-xl animate-blob" />
-          <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000" />
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000" />
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl animate-blob" />
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-violet-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000" />
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000" />
         </div>
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-600/30">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
+            <img src="/images/logo.jpg" alt="iDone NOC" className="h-14 w-auto object-contain" />
             <div>
               <h1 className="text-3xl font-bold text-white tracking-tight">iDone</h1>
-              <p className="text-slate-400 font-medium">NOC Platform</p>
+              <p className="text-indigo-300 font-medium">NOC Platform</p>
             </div>
           </div>
           <h2 className="text-4xl font-bold text-white leading-tight mb-4">
@@ -85,18 +83,16 @@ export default function Login() {
       {/* Right side - Login Form */}
       <div className="flex-1 flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-600/30">
-              <Shield className="w-7 h-7 text-white" />
-            </div>
-            <div>
+          {/* Logo - Centered on both mobile and desktop */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <img src="/images/logo.jpg" alt="iDone NOC" className="h-12 w-auto object-contain" />
+            <div className="text-center lg:text-left">
               <h1 className="text-2xl font-bold text-slate-900">iDone</h1>
               <p className="text-xs text-slate-500">NOC Platform</p>
             </div>
           </div>
 
-          <div className="card p-8">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
             <div className="text-center mb-8">
               <h2 className="text-xl font-bold text-slate-900">Welcome back</h2>
               <p className="text-sm text-slate-500 mt-1">Sign in to your account to continue</p>
@@ -119,7 +115,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your email"
                   required
                   autoComplete="email"
@@ -135,7 +131,7 @@ export default function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"
@@ -145,7 +141,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full py-3"
+                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-lg shadow-indigo-600/30 hover:shadow-indigo-700/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
