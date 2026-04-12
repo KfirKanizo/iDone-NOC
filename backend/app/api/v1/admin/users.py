@@ -123,7 +123,7 @@ def create_user(
 def invite_user(
     user_data: UserInvite,
     db: Session = Depends(get_db),
-    current_admin: dict = Depends(get_current_admin)
+    current_admin: User = Depends(get_current_admin)
 ):
     from app.config import settings
     from app.services.email_service import send_invitation_email
@@ -176,7 +176,7 @@ def invite_user(
     send_invitation_email(
         to_email=user.email,
         invitee_name=user.email.split('@')[0],
-        inviter_name=current_admin.get("username", "An administrator"),
+        inviter_name=current_admin.email,
         setup_url=setup_url,
     )
 
