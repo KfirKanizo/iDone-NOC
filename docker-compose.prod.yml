@@ -92,6 +92,7 @@ services:
       - certbot_var:/var/www/certbot
     depends_on:
       - api
+      - flower
 
   certbot:
     image: certbot/certbot
