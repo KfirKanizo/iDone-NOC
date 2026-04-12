@@ -7,7 +7,9 @@ import {
   Phone, 
   FileText, 
   LogOut,
-  BarChart3
+  BarChart3,
+  Activity,
+  Terminal
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -22,6 +24,11 @@ const adminNavItems = [
   { path: '/users', label: 'Users', icon: UserCog },
   { path: '/contacts', label: 'Contacts', icon: Phone },
   { path: '/policies', label: 'Policies', icon: FileText },
+];
+
+const monitoringLinks = [
+  { path: '/flower/', label: 'Task Monitor', icon: Activity },
+  { path: '/dozzle/', label: 'Server Logs', icon: Terminal },
 ];
 
 const clientNavItems = [
@@ -69,6 +76,26 @@ export default function Layout({ children }: LayoutProps) {
                 <Icon className={`w-5 h-5 ${isActive ? 'text-primary-400' : ''}`} />
                 {item.label}
               </Link>
+            );
+          })}
+          
+          {/* Divider */}
+          <div className="my-4 border-t border-slate-700" />
+          
+          {/* Monitoring Links (Admin Only) */}
+          {isAdmin && monitoringLinks.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a
+                key={item.path}
+                href={item.path}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all duration-200"
+              >
+                <Icon className="w-5 h-5" />
+                {item.label}
+              </a>
             );
           })}
         </nav>
