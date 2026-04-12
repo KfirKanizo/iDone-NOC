@@ -8,6 +8,7 @@ interface Client {
   id: string;
   company_name: string;
   api_key?: string;
+  api_key_preview?: string;
   is_active: boolean;
 }
 
