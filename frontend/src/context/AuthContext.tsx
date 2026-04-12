@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
 export interface User {
   id: string;
@@ -21,6 +21,12 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const decodeToken = (token: string): User | null => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < currentTime) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return null;
+    }
     return {
       id: payload.sub,
       email: payload.email,
@@ -32,24 +38,19 @@ const decodeToken = (token: string): User | null => {
   }
 };
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+const getInitialUser = (): User | null => {
+  const token = localStorage.getItem('token');
+  const storedUser = localStorage.getItem('user');
+  if (!token || !storedUser) return null;
+  try {
+    return JSON.parse(storedUser);
+  } catch {
+    return decodeToken(token);
+  }
+};
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    if (token && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        const decoded = decodeToken(token);
-        if (decoded) {
-          setUser(decoded);
-          localStorage.setItem('user', JSON.stringify(decoded));
-        }
-      }
-    }
-  }, []);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(getInitialUser);
 
   const setAuth = useCallback((token: string, userData: User) => {
     localStorage.setItem('token', token);
