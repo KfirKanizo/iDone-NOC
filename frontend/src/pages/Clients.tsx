@@ -63,7 +63,11 @@ export default function Clients() {
     setSubmitting(true);
     try {
       const created = await createClient(formData);
-      setClients([...clients, { ...created, api_key: created.api_key }]);
+      setClients([...clients, { 
+        ...created, 
+        api_key: created.api_key,
+        api_key_preview: created.api_key_preview 
+      }]);
       setNewApiKey(created.api_key);
       closeModal();
       showToast('success', 'Client created successfully');
@@ -111,7 +115,11 @@ export default function Clients() {
   const handleRegenerateKey = async (id: string) => {
     try {
       const updated = await regenerateClientKey(id);
-      setClients(clients.map(c => c.id === id ? { ...c, api_key: updated.api_key } : c));
+      setClients(clients.map(c => c.id === id ? { 
+        ...c, 
+        api_key: updated.api_key,
+        api_key_preview: updated.api_key_preview 
+      } : c));
       setNewApiKey(updated.api_key);
       showToast('success', 'API key regenerated');
     } catch (err) {
@@ -170,8 +178,8 @@ export default function Clients() {
                         </span>
                       </td>
                       <td className="table-cell">
-                        <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">
-                          {client.api_key ? client.api_key.slice(0, 20) + '...' : '-'}
+                        <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono">
+                          {client.api_key_preview || '-'}
                         </code>
                       </td>
                       <td className="table-cell">

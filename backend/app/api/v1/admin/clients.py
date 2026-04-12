@@ -20,6 +20,7 @@ class ClientResponse(BaseModel):
     id: str
     company_name: str
     api_key: Optional[str] = None
+    api_key_preview: Optional[str] = None
     is_active: bool
 
     class Config:
@@ -41,6 +42,7 @@ def list_clients(
         ClientResponse(
             id=str(c.id),
             company_name=c.company_name,
+            api_key_preview=c.api_key_preview,
             is_active=c.is_active,
         ) for c in clients
     ]
@@ -65,6 +67,7 @@ def create_client(
         id=str(client.id),
         company_name=client.company_name,
         api_key=api_key,
+        api_key_preview=client.api_key_preview,
         is_active=client.is_active,
     )
 
@@ -81,6 +84,7 @@ def get_client(
     return ClientResponse(
         id=str(client.id),
         company_name=client.company_name,
+        api_key_preview=client.api_key_preview,
         is_active=client.is_active,
     )
 
@@ -106,6 +110,7 @@ def update_client(
     return ClientResponse(
         id=str(client.id),
         company_name=client.company_name,
+        api_key_preview=client.api_key_preview,
         is_active=client.is_active,
     )
 
@@ -143,5 +148,6 @@ def regenerate_api_key(
         id=str(client.id),
         company_name=client.company_name,
         api_key=api_key,
+        api_key_preview=client.api_key_preview,
         is_active=client.is_active,
     )

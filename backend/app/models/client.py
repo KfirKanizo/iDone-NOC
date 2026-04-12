@@ -24,6 +24,7 @@ class Client(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_name = Column(String(255), nullable=False)
     api_key_hash = Column(String(64), nullable=False, unique=True)
+    api_key_preview = Column(String(12), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -38,6 +39,7 @@ class Client(Base):
     def set_api_key(self, api_key: str):
         self._api_key = api_key
         self.api_key_hash = hash_api_key(api_key)
+        self.api_key_preview = f"{api_key[:4]}...{api_key[-4:]}"
 
     def get_api_key(self):
         return self._api_key
