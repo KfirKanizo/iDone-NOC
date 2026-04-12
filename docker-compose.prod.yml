@@ -106,6 +106,7 @@ services:
     image: amir20/dozzle:latest
     environment:
       DOZZLE_NO_ANALYTICS: "1"
+      DOZZLE_BASE: /dozzle
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: always
