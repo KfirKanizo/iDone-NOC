@@ -203,7 +203,7 @@ export default function Contacts() {
             <h1 className="text-2xl font-bold text-slate-900">Contacts</h1>
             <p className="text-sm text-slate-500 mt-1">Manage escalation contacts for your clients</p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary">
+          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Add Contact
           </button>
@@ -418,7 +418,7 @@ export default function Contacts() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 flex items-center justify-center"
                   >
                     {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Contact' : 'Create Contact')}
                   </button>

@@ -129,7 +129,7 @@ export default function Clients() {
             <h1 className="text-2xl font-bold text-slate-900">Clients</h1>
             <p className="text-sm text-slate-500 mt-1">Manage client accounts and API access</p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary">
+          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Add Client
           </button>
@@ -262,7 +262,7 @@ export default function Clients() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 flex items-center justify-center"
                   >
                     {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Client' : 'Create Client')}
                   </button>
@@ -294,7 +294,7 @@ export default function Clients() {
                 </div>
                 <button
                   onClick={() => setNewApiKey(null)}
-                  className="btn-primary w-full"
+                  className="btn-primary w-full flex items-center justify-center"
                 >
                   I have saved the key
                 </button>

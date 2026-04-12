@@ -253,7 +253,7 @@ export default function Policies() {
             <h1 className="text-2xl font-bold text-slate-900">Escalation Policies</h1>
             <p className="text-sm text-slate-500 mt-1">Configure incident escalation workflows</p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary">
+          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Create Policy
           </button>
@@ -517,7 +517,7 @@ export default function Policies() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 flex items-center justify-center"
                   >
                     {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Policy' : 'Create Policy')}
                   </button>

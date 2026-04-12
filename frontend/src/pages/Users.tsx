@@ -143,7 +143,7 @@ export default function Users() {
             <h1 className="text-2xl font-bold text-slate-900">Users</h1>
             <p className="text-sm text-slate-500 mt-1">Manage user accounts and permissions</p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary">
+          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Add User
           </button>
@@ -324,7 +324,7 @@ export default function Users() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 flex items-center justify-center"
                   >
                     {submitting 
                       ? (isEditMode ? 'Updating...' : 'Creating...') 

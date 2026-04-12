@@ -213,7 +213,7 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-slate-900">Incidents Dashboard</h1>
             <p className="text-sm text-slate-500 mt-1">Monitor and manage all system incidents</p>
           </div>
-          <button onClick={() => setShowCreateModal(true)} className="btn-primary">
+          <button onClick={() => setShowCreateModal(true)} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Trigger Incident
           </button>
@@ -422,7 +422,7 @@ export default function Dashboard() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary flex-1"
+                    className="btn-primary flex-1 flex items-center justify-center"
                   >
                     {submitting ? 'Creating...' : 'Create Incident'}
                   </button>
