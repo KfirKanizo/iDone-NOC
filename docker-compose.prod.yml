@@ -66,8 +66,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     command: celery -A app.celery_app:app flower --port=5555 --url_prefix=flower --basic_auth=${FLOWER_ADMIN_USER}:${FLOWER_ADMIN_PASSWORD}
-    ports:
-      - "5555:5555"
     env_file:
       - .env
     environment:
