@@ -128,4 +128,59 @@ export const getPortalContact = async (id: string): Promise<PortalContact> => {
   return response.data;
 };
 
+export interface PortalPolicy {
+  id: string;
+  client_id: string;
+  name: string;
+  max_retries_per_level: number;
+  retry_delay_seconds: number;
+  tts_message_template: string;
+  is_active: boolean;
+  level_0_contact?: { id: string; full_name: string; email: string };
+  level_1_contact?: { id: string; full_name: string; email: string };
+  level_2_contact?: { id: string; full_name: string; email: string };
+  level_3_contact?: { id: string; full_name: string; email: string };
+  level_4_contact?: { id: string; full_name: string; email: string };
+  level_5_contact?: { id: string; full_name: string; email: string };
+}
+
+export interface PortalContactCreate {
+  full_name: string;
+  email: string;
+  phone_number: string;
+  language: string;
+}
+
+export interface PortalContactUpdate {
+  full_name?: string;
+  email?: string;
+  phone_number?: string;
+  language?: string;
+  is_active?: boolean;
+}
+
+export const createPortalContact = async (data: PortalContactCreate): Promise<PortalContact> => {
+  const response = await portalApi.post('/v1/portal/contacts', data);
+  return response.data;
+};
+
+export const updatePortalContact = async (id: string, data: PortalContactUpdate): Promise<PortalContact> => {
+  const response = await portalApi.put(`/v1/portal/contacts/${id}`, data);
+  return response.data;
+};
+
+export const deletePortalContact = async (id: string): Promise<void> => {
+  await portalApi.delete(`/v1/portal/contacts/${id}`);
+};
+
+export const getPortalPolicies = async (): Promise<PortalPolicy[]> => {
+  const response = await portalApi.get('/v1/portal/policies');
+  return response.data;
+};
+
+export const getPortalPolicy = async (id: string): Promise<PortalPolicy> => {
+  const response = await portalApi.get(`/v1/portal/policies/${id}`);
+  return response.data;
+};
+
 export default portalApi;

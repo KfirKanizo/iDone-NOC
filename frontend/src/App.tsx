@@ -13,6 +13,7 @@ import PortalIncidents from './pages/portal/PortalIncidents';
 import PortalIncidentDetails from './pages/portal/PortalIncidentDetails';
 import PortalContacts from './pages/portal/PortalContacts';
 import PortalAnalytics from './pages/portal/PortalAnalytics';
+import PortalPolicies from './pages/portal/PortalPolicies';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -136,6 +137,14 @@ function App() {
               element={
                 <ClientRoute>
                   <PortalContacts />
+                </ClientRoute>
+              }
+            />
+            <Route
+              path="/portal/policies"
+              element={
+                <ClientRoute>
+                  <PortalPolicies />
                 </ClientRoute>
               }
             />

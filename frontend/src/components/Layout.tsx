@@ -27,6 +27,7 @@ const adminNavItems = [
 const clientNavItems = [
   { path: '/portal/incidents', label: 'Incidents', icon: LayoutDashboard },
   { path: '/portal/contacts', label: 'Contacts', icon: Phone },
+  { path: '/portal/policies', label: 'Policies', icon: FileText },
   { path: '/portal/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
