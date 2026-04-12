@@ -44,7 +44,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Fixed Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 flex flex-col z-50">
+      <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-50">
         {/* Logo Area */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
           <img src="/images/logo.jpg" alt="iDone NOC" className="h-10 w-auto object-contain" />
@@ -89,10 +89,8 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64">
-        <div className="p-6">
-          {children}
-        </div>
+      <main className="flex-1 ml-64 p-4">
+        {children}
       </main>
     </div>
   );
