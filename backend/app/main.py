@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import incidents, twilio, analytics
 from app.api.v1.admin import auth, clients, contacts, policies, incidents as admin_incidents, users
 from app.api.v1.portal import router as portal_router
+from app.api.v1.auth import setup_password
 from app.config import settings
 
 app = FastAPI(
@@ -33,6 +34,7 @@ app.include_router(policies.router, prefix="/api/v1/admin")
 app.include_router(admin_incidents.router, prefix="/api/v1/admin")
 app.include_router(users.router, prefix="/api/v1/admin")
 app.include_router(portal_router, prefix="/api/v1")
+app.include_router(setup_password.router, prefix="/api/v1/auth")
 
 
 @app.get("/health")

@@ -256,6 +256,11 @@ export const createUser = async (data: UserCreate): Promise<User> => {
   return response.data;
 };
 
+export const inviteUser = async (data: Omit<UserCreate, 'password'>): Promise<User> => {
+  const response = await api.post('/v1/admin/users/invite', data);
+  return response.data;
+};
+
 export const updateUser = async (id: string, data: UserUpdate): Promise<User> => {
   const response = await api.patch(`/v1/admin/users/${id}/`, data);
   return response.data;

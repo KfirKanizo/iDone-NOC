@@ -186,3 +186,142 @@ NOC Platform
 </html>"""
 
     return send_email(to_email, subject, body, html_body=html_body)
+
+
+def send_invitation_email(
+    to_email: str,
+    invitee_name: str,
+    inviter_name: str,
+    setup_url: str,
+) -> bool:
+    subject = "Welcome to iDone NOC - Set Up Your Account"
+    
+    body = f"""Welcome to iDone NOC
+
+Hello {invitee_name},
+
+{inviter_name} has invited you to join the iDone NOC platform.
+
+To set up your account and access the platform, please click the link below:
+{setup_url}
+
+This invitation will expire in 7 days.
+
+If you did not expect this invitation, please ignore this email.
+
+---
+iDone NOC Team
+"""
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to iDone NOC</title>
+  <style>
+    body {{
+      background: #f8fafc;
+      font-family: 'Inter', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }}
+    .container {{
+      max-width: 520px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #0002;
+      padding: 40px 32px;
+    }}
+    .logo {{
+      text-align: center;
+      margin-bottom: 24px;
+    }}
+    .logo img {{
+      height: 48px;
+    }}
+    h1 {{
+      color: #1e293b;
+      font-size: 24px;
+      margin: 0 0 16px 0;
+      text-align: center;
+    }}
+    .greeting {{
+      color: #475569;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      text-align: center;
+    }}
+    .inviter {{
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 32px;
+      text-align: center;
+    }}
+    .button-container {{
+      text-align: center;
+      margin: 32px 0;
+    }}
+    .btn {{
+      display: inline-block;
+      padding: 14px 32px;
+      background: #4f46e5;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }}
+    .btn:hover {{
+      background: #4338ca;
+    }}
+    .footer {{
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }}
+    .note {{
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 24px 0;
+      font-size: 14px;
+      color: #92400e;
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <a href="https://www.idone.co.il" target="_blank">
+        <img src="https://www.idone.co.il/assets/images/logos/idone-logo.png" alt="iDone" />
+      </a>
+    </div>
+    <h1>Welcome to iDone NOC</h1>
+    <p class="greeting">
+      Hello <strong>{invitee_name}</strong>,<br/><br/>
+      <strong>{inviter_name}</strong> has invited you to join the iDone NOC platform.
+    </p>
+    <p class="inviter">
+      Set up your account to access the platform and manage incidents.
+    </p>
+    <div class="button-container">
+      <a href="{setup_url}" class="btn">Set Up Account</a>
+    </div>
+    <div class="note">
+      <strong>Note:</strong> This invitation link will expire in 7 days. If you did not expect this invitation, please ignore this email.
+    </div>
+    <div class="footer">
+      <p>iDone NOC Platform - Managed by iDone Team</p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+    return send_email(to_email, subject, body, html_body=html_body)

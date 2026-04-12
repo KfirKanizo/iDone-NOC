@@ -27,6 +27,12 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class UserInvite(BaseModel):
+    email: EmailStr
+    role: UserRole = UserRole.CLIENT
+    client_id: Optional[UUID] = None
+
+
 class UserResponse(BaseModel):
     id: UUID
     email: str
@@ -102,6 +108,77 @@ def create_user(
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        role=user.role,
+        client_id=user.client_id,
+        is_active=user.is_active,
+        created_at=user.created_at.isoformat() if user.created_at else None
+    )
+
+
+@router.post("/invite", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def invite_user(
+    user_data: UserInvite,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    from app.config import settings
+    from app.services.email_service import send_invitation_email
+    
+    existing = db.query(User).filter(User.email == user_data.email).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
+    if user_data.role == UserRole.ADMIN and user_data.client_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Admin users cannot be associated with a client",
+        )
+
+    if user_data.role == UserRole.CLIENT and user_data.client_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Client users must be associated with a client",
+        )
+
+    if user_data.client_id:
+        from app.models.client import Client
+        client = db.query(Client).filter(Client.id == user_data.client_id).first()
+        if not client:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Client not found",
+            )
+
+    user = User(
+        email=user_data.email,
+        password_hash=None,
+        role=user_data.role,
+        client_id=user_data.client_id,
+        is_active=True,
+    )
+    db.add(user)
+    db.flush()
+
+    token = user.generate_invitation_token()
+    db.commit()
+    db.refresh(user)
+
+    base_url = settings.BASE_URL.rstrip("/") if settings.BASE_URL else ""
+    setup_url = f"{base_url}/setup-password?token={token}"
+    
+    send_invitation_email(
+        to_email=user.email,
+        invitee_name=user.email.split('@')[0],
+        inviter_name=current_admin.get("username", "An administrator"),
+        setup_url=setup_url,
+    )
 
     return UserResponse(
         id=user.id,

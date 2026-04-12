@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getUsers, createUser, updateUser, deleteUser, getClients, type User, type UserCreate, type UserUpdate, type Client } from '../api/client';
+import { getUsers, createUser, updateUser, deleteUser, getClients, inviteUser, type User, type UserCreate, type UserUpdate, type Client } from '../api/client';
 import { useToast } from '../components/Toast';
-import { Plus, RefreshCw, User as UserIcon, X, Pencil, Trash2, Shield, Mail } from 'lucide-react';
+import { Plus, RefreshCw, User as UserIcon, X, Pencil, Trash2, Shield, Mail, Send } from 'lucide-react';
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
@@ -11,6 +11,7 @@ export default function Users() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserCreate>({ email: '', password: '', role: 'client', client_id: undefined });
+  const [sendInvite, setSendInvite] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
 
@@ -43,6 +44,7 @@ export default function Users() {
 
   const openCreateModal = () => {
     setFormData({ email: '', password: '', role: 'client', client_id: undefined });
+    setSendInvite(true);
     setEditingUser(null);
     setIsEditMode(false);
     setShowForm(true);
@@ -65,6 +67,7 @@ export default function Users() {
     setIsEditMode(false);
     setEditingUser(null);
     setFormData({ email: '', password: '', role: 'client', client_id: undefined });
+    setSendInvite(true);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -77,10 +80,18 @@ export default function Users() {
         role: formData.role,
         client_id: formData.role === 'admin' ? undefined : formData.client_id,
       };
-      const created = await createUser(userData);
+      
+      let created;
+      if (sendInvite) {
+        const { password, ...inviteData } = userData;
+        created = await inviteUser(inviteData);
+        showToast('success', 'Invitation sent successfully');
+      } else {
+        created = await createUser(userData);
+        showToast('success', 'User created successfully');
+      }
       setUsers([...users, created]);
       closeModal();
-      showToast('success', 'User created successfully');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } };
       const message = error.response?.data?.detail || 'Failed to create user';
@@ -264,6 +275,22 @@ export default function Users() {
                   />
                 </div>
 
+                {!isEditMode && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="sendInvite"
+                      checked={sendInvite}
+                      onChange={(e) => setSendInvite(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <label htmlFor="sendInvite" className="text-sm text-slate-700 flex items-center gap-1">
+                      <Send className="w-3 h-3" />
+                      Send invitation email (recommended)
+                    </label>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     Password {isEditMode && <span className="text-slate-400 font-normal">(optional)</span>}
@@ -273,8 +300,9 @@ export default function Users() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="input-field"
-                    placeholder={isEditMode ? 'Leave blank to keep current' : 'Enter password'}
-                    required={!isEditMode}
+                    placeholder={isEditMode ? 'Leave blank to keep current' : (sendInvite ? 'Not needed when sending invite' : 'Enter password')}
+                    required={!isEditMode && !sendInvite}
+                    disabled={!isEditMode && sendInvite}
                   />
                 </div>
 

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
+import SetupPassword from './pages/SetupPassword';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Clients from './pages/Clients';
@@ -60,6 +61,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/setup-password" element={<SetupPassword />} />
             
             <Route path="/" element={<RootRedirect />} />
             
