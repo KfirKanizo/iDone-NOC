@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { getIncidents, getIncidentLogs, getClients, acknowledgeIncident, resolveIncident, createIncident, getDashboardStats, getPolicies, getContacts } from '../api/client';
 import type { DashboardStats, Client } from '../api/client';
 import { renderLogDetails, formatLogDetailValue, type Policy, type Contact } from '../utils/logFormatter';
-import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
 import { Eye, AlertTriangle, CheckCircle, Clock, Activity, Bell, Plus, X, RefreshCw } from 'lucide-react';
 
@@ -206,7 +205,7 @@ export default function Dashboard() {
   );
 
   return (
-    <Layout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -486,6 +485,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

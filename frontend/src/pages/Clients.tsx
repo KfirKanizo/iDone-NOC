@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { getClients, createClient, updateClient, deleteClient, regenerateClientKey } from '../api/client';
-import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
 import { Plus, RefreshCw, Building2, CheckCircle, X, Pencil, Trash2 } from 'lucide-react';
 
@@ -130,7 +129,7 @@ export default function Clients() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -312,6 +311,6 @@ export default function Clients() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

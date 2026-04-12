@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getChartsData, getClients } from '../api/client';
 import type { ChartsData, Client } from '../api/client';
-import Layout from '../components/Layout';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -71,7 +70,7 @@ export default function Analytics() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -257,6 +256,6 @@ export default function Analytics() {
           </>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

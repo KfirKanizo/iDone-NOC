@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { getUsers, createUser, updateUser, deleteUser, getClients, type User, type UserCreate, type UserUpdate, type Client } from '../api/client';
-import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
 import { Plus, RefreshCw, User as UserIcon, X, Pencil, Trash2, Shield, Mail } from 'lucide-react';
 
@@ -135,7 +134,7 @@ export default function Users() {
   const showClientDropdown = formData.role === 'client';
 
   return (
-    <Layout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -337,6 +336,6 @@ export default function Users() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

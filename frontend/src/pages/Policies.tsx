@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getClients, getContacts, getPolicies, createPolicy, updatePolicy, deletePolicy } from '../api/client';
-import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
 import { Plus, FileText, Clock, ArrowRight, X, Pencil, Trash2, RefreshCw } from 'lucide-react';
 
@@ -246,7 +245,7 @@ export default function Policies() {
   const inactiveContacts = contacts.filter(c => c.client_id === formData.client_id && !c.is_active);
 
   return (
-    <Layout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -527,6 +526,6 @@ export default function Policies() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

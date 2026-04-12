@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getClients, getContacts, createContact, updateContact, deleteContact } from '../api/client';
-import Layout from '../components/Layout';
 import { useToast } from '../components/Toast';
 import { Plus, User, Mail, Phone, X, Pencil, Trash2, Users } from 'lucide-react';
 
@@ -196,7 +195,7 @@ export default function Contacts() {
   const selectedClientName = getSelectedClientName();
 
   return (
-    <Layout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -428,6 +427,6 @@ export default function Contacts() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }
