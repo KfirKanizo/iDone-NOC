@@ -2,13 +2,15 @@ services:
   postgres:
     image: postgres:15
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: noc
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: nocdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U noc -d nocdb"]
       interval: 5s
@@ -17,6 +19,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    networks:
+      - internal-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -35,6 +39,8 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - BASE_URL=${BASE_URL:-https://noc.idone.co.il}
+    networks:
+      - internal-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,6 +61,8 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - PYTHONPATH=/app
       - BASE_URL=${BASE_URL:-https://noc.idone.co.il}
+    networks:
+      - internal-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,6 +82,8 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - PYTHONPATH=/app
+    networks:
+      - internal-network
     depends_on:
       redis:
         condition: service_healthy
@@ -84,23 +94,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.nginx
+    # המלצה: אתה יכול למחוק את הבלוק ports לגמרי, כי NPM ניגש אליו ישירות ברשת הפנימית
     ports:
       - "8080:80"
       - "8443:443"
-    volumes:
-      - certbot_etc:/etc/letsencrypt
-      - certbot_var:/var/www/certbot
+    networks:
+      - internal-network  # בשביל לדבר עם api, flower ו-dozzle
+      - proxy-network     # בשביל לקבל תעבורה מ-Nginx Proxy Manager
     depends_on:
       - api
       - flower
       - dozzle
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - certbot_etc:/etc/letsencrypt
-      - certbot_var:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $$!; done;'"
 
   dozzle:
     image: amir20/dozzle:latest
@@ -109,9 +113,15 @@ services:
       DOZZLE_BASE: /dozzle
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal-network
     restart: always
 
 volumes:
   postgres_data:
-  certbot_etc:
-  certbot_var:
+
+networks:
+  internal-network:    # הרשת הפנימית המבודדת של ה-NOC
+    driver: bridge
+  proxy-network:       # הרשת החיצונית המשותפת עם NPM
+    external: true
