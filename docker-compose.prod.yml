@@ -94,13 +94,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.nginx
-    # המלצה: אתה יכול למחוק את הבלוק ports לגמרי, כי NPM ניגש אליו ישירות ברשת הפנימית
-    ports:
-      - "8080:80"
-      - "8443:443"
     networks:
-      - internal-network  # בשביל לדבר עם api, flower ו-dozzle
-      - proxy-network     # בשביל לקבל תעבורה מ-Nginx Proxy Manager
+      - internal-network
+      - proxy-network
     depends_on:
       - api
       - flower
@@ -121,7 +117,7 @@ volumes:
   postgres_data:
 
 networks:
-  internal-network:    # הרשת הפנימית המבודדת של ה-NOC
+  internal-network:
     driver: bridge
-  proxy-network:       # הרשת החיצונית המשותפת עם NPM
+  proxy-network:
     external: true
