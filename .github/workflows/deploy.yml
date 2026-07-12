@@ -18,7 +18,11 @@ on:
 jobs:
   manage-docker-service:
     runs-on: ubuntu-latest
-    environment: tst
+    environment: production
+    
+    # 1. הוספת הרשאה לטוקן כדי שיוכל למשוך קוד מהפרויקט
+    permissions:
+      contents: read
     
     steps:
       - name: Execute via SSH
@@ -36,16 +40,17 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           envs: ENV_PRD,DOCKER_COMPOSE_PRD,BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN
+          script_stop: true # 2. עוצר מיד את הפייפליין אם אחת מהפקודות נכשלת
           script: |
-            # Target project directory on the server
+            # 3. מונע מ-Git להיתקע ולהמתין להקלדת סיסמה ידנית
+            export GIT_TERMINAL_PROMPT=0
+            
             PROJECT_DIR="/opt/stacks/iDone-NOC"
             
-            # Create the directory if it doesn't exist and navigate into it
             mkdir -p $PROJECT_DIR
             cd $PROJECT_DIR
             
             ACTION=$EVENT_ACTION
-            # If the event is an automatic push, treat it as a deploy action
             if [ "$EVENT_NAME" == "push" ]; then
               ACTION="deploy"
             fi
@@ -65,23 +70,21 @@ jobs:
             if [ "$ACTION" == "deploy" ]; then
               echo "Deploying new code from branch: $BRANCH..."
               
-              # Initialize git and set up secure remote using the temporary GitHub token
               git init
               git remote remove origin 2>/dev/null || true
-              git remote add origin https://oauth2:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
+              
+              # שימוש בפורמט הגישה הרשמי של GitHub Actions
+              git remote add origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
               git fetch origin
               git reset --hard origin/$BRANCH
               
-              # Generate the .env and docker-compose.yml files from GitHub Secrets
               echo "$ENV_PRD" > .env
               echo "$DOCKER_COMPOSE_PRD" > docker-compose.yml
               echo "Configuration files generated securely."
               
-              # Stop existing containers, rebuild, and start the new ones
               docker compose down
               docker compose up -d --build
               
-              # Remove unused Docker images to free up disk space
               docker image prune -f
               
               echo "Deployment completed successfully!"
