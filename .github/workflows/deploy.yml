@@ -18,6 +18,7 @@ on:
 jobs:
   manage-docker-service:
     runs-on: ubuntu-latest
+    environment: tst
     
     steps:
       - name: Execute via SSH
