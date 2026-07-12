@@ -20,7 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: tst
     
-    # 1. הוספת הרשאה לטוקן כדי שיוכל למשוך קוד מהפרויקט
     permissions:
       contents: read
     
@@ -40,15 +39,21 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           envs: ENV_PRD,DOCKER_COMPOSE_PRD,BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN
-          script_stop: true # 2. עוצר מיד את הפייפליין אם אחת מהפקודות נכשלת
+          script_stop: true
           script: |
-            # 3. מונע מ-Git להיתקע ולהמתין להקלדת סיסמה ידנית
+            # מפעיל מצב דיבאג - כל פקודה תודפס ללוג לפני ההרצה
+            set -x 
+            
+            echo "--- STARTING SCRIPT EXECUTION ---"
             export GIT_TERMINAL_PROMPT=0
             
             PROJECT_DIR="/opt/stacks/iDone-NOC"
             
+            echo "Attempting to create and enter directory..."
             mkdir -p $PROJECT_DIR
             cd $PROJECT_DIR
+            
+            echo "Directory accessed successfully."
             
             ACTION=$EVENT_ACTION
             if [ "$EVENT_NAME" == "push" ]; then
@@ -73,17 +78,20 @@ jobs:
               git init
               git remote remove origin 2>/dev/null || true
               
-              # שימוש בפורמט הגישה הרשמי של GitHub Actions
               git remote add origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
+              
+              echo "Fetching from Git..."
               git fetch origin
+              echo "Resetting to branch..."
               git reset --hard origin/$BRANCH
               
+              echo "Generating configuration files..."
               echo "$ENV_PRD" > .env
               echo "$DOCKER_COMPOSE_PRD" > docker-compose.yml
-              echo "Configuration files generated securely."
               
+              echo "Restarting Docker containers..."
               docker compose down
-              docker compose up -d --build
+              docker compose up -d --build < /dev/null
               
               docker image prune -f
               
