@@ -18,7 +18,7 @@ on:
 jobs:
   manage-docker-service:
     runs-on: ubuntu-latest
-    environment: production
+    environment: tst
     
     # 1. הוספת הרשאה לטוקן כדי שיוכל למשוך קוד מהפרויקט
     permissions:
