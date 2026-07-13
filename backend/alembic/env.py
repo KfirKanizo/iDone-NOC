@@ -11,7 +11,16 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 from app.database import Base
-from app.models import Client, Contact, EscalationPolicy, Incident, IncidentLog
+from app.models import (
+    Client,
+    Contact,
+    EscalationPolicy,
+    Incident,
+    IncidentLog,
+    Monitor,
+    MonitorCheck,
+    User,
+)
 
 target_metadata = Base.metadata
 
