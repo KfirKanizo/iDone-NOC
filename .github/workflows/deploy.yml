@@ -24,14 +24,16 @@ jobs:
       contents: read
     
     steps:
-      - name: Check Network Connectivity
+      # 1. המרת הסודות למחרוזת רציפה כדי למנוע שגיאות YAML או בעיית מירכאות
+      - name: Encode Secrets to Base64
         env:
-          HOST: ${{ secrets.SERVER_HOST }}
-          PORT: ${{ secrets.SERVER_PORT }}
+          ENV_PRD: ${{ secrets.ENV_PRD }}
+          DOCKER_COMPOSE_PRD: ${{ secrets.DOCKER_COMPOSE_PRD }}
         run: |
-          echo "Testing connection to $HOST on port $PORT..."
-          nc -vz -w 5 $HOST $PORT
+          echo "ENV_B64=$(printf '%s' "$ENV_PRD" | base64 -w 0)" >> $GITHUB_ENV
+          echo "DC_B64=$(printf '%s' "$DOCKER_COMPOSE_PRD" | base64 -w 0)" >> $GITHUB_ENV
 
+      # 2. התחברות והרצת הפקודות בשרת
       - name: Execute via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -39,17 +41,18 @@ jobs:
           EVENT_ACTION: ${{ github.event.inputs.action }}
           EVENT_NAME: ${{ github.event_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENV_B64: ${{ env.ENV_B64 }}
+          DC_B64: ${{ env.DC_B64 }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          # הסרנו מכאן את העברת הקבצים הכבדים
-          envs: BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN
+          # מעבירים את המשתנים המקודדים
+          envs: BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN,ENV_B64,DC_B64
           script_stop: true
           script: |
             set -x 
-            echo "--- STARTING SCRIPT EXECUTION ---"
             export GIT_TERMINAL_PROMPT=0
             
             PROJECT_DIR="/opt/stacks/iDone-NOC"
@@ -81,15 +84,10 @@ jobs:
               git fetch origin
               git reset --hard origin/$BRANCH
               
-              echo "Generating configuration files securely..."
-              
-              cat << 'EOF' > .env
-${{ secrets.ENV_PRD }}
-EOF
-              
-              cat << 'EOF' > docker-compose.yml
-${{ secrets.DOCKER_COMPOSE_PRD }}
-EOF
+              echo "Decoding and generating configuration files..."
+              # פענוח הטקסט המקודד בחזרה לקבצים האמיתיים בשרת
+              echo "$ENV_B64" | base64 -d > .env
+              echo "$DC_B64" | base64 -d > docker-compose.yml
               
               docker compose down
               docker compose up -d --build < /dev/null
