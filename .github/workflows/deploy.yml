@@ -24,6 +24,14 @@ jobs:
       contents: read
     
     steps:
+      - name: Check Network Connectivity
+        env:
+          HOST: ${{ secrets.SERVER_HOST }}
+          PORT: ${{ secrets.SERVER_PORT }}
+        run: |
+          echo "Testing connection to $HOST on port $PORT..."
+          nc -vz -w 5 $HOST $PORT
+      
       - name: Execute via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
