@@ -31,12 +31,10 @@ jobs:
         run: |
           echo "Testing connection to $HOST on port $PORT..."
           nc -vz -w 5 $HOST $PORT
-      
+
       - name: Execute via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          ENV_PRD: ${{ secrets.ENV_PRD }}
-          DOCKER_COMPOSE_PRD: ${{ secrets.DOCKER_COMPOSE_PRD }}
           BRANCH: ${{ github.ref_name }}
           EVENT_ACTION: ${{ github.event.inputs.action }}
           EVENT_NAME: ${{ github.event_name }}
@@ -46,22 +44,17 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          envs: ENV_PRD,DOCKER_COMPOSE_PRD,BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN
+          # הסרנו מכאן את העברת הקבצים הכבדים
+          envs: BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN
           script_stop: true
           script: |
-            # מפעיל מצב דיבאג - כל פקודה תודפס ללוג לפני ההרצה
             set -x 
-            
             echo "--- STARTING SCRIPT EXECUTION ---"
             export GIT_TERMINAL_PROMPT=0
             
             PROJECT_DIR="/opt/stacks/iDone-NOC"
-            
-            echo "Attempting to create and enter directory..."
             mkdir -p $PROJECT_DIR
             cd $PROJECT_DIR
-            
-            echo "Directory accessed successfully."
             
             ACTION=$EVENT_ACTION
             if [ "$EVENT_NAME" == "push" ]; then
@@ -69,13 +62,11 @@ jobs:
             fi
             
             if [ "$ACTION" == "stop" ]; then
-              echo "Stopping Docker containers..."
               docker compose down
               exit 0
             fi
             
             if [ "$ACTION" == "start" ]; then
-              echo "Starting Docker containers..."
               docker compose up -d
               exit 0
             fi
@@ -85,22 +76,23 @@ jobs:
               
               git init
               git remote remove origin 2>/dev/null || true
-              
               git remote add origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
               
-              echo "Fetching from Git..."
               git fetch origin
-              echo "Resetting to branch..."
               git reset --hard origin/$BRANCH
               
-              echo "Generating configuration files..."
-              echo "$ENV_PRD" > .env
-              echo "$DOCKER_COMPOSE_PRD" > docker-compose.yml
+              echo "Generating configuration files securely..."
               
-              echo "Restarting Docker containers..."
+              cat << 'EOF' > .env
+${{ secrets.ENV_PRD }}
+EOF
+              
+              cat << 'EOF' > docker-compose.yml
+${{ secrets.DOCKER_COMPOSE_PRD }}
+EOF
+              
               docker compose down
               docker compose up -d --build < /dev/null
-              
               docker image prune -f
               
               echo "Deployment completed successfully!"
