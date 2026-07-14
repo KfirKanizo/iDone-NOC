@@ -44,7 +44,6 @@ jobs:
 
       - name: Execute via SSH
         uses: appleboy/ssh-action@v1.0.3
-        timeout: 30m
         env:
           BRANCH: ${{ github.ref_name }}
           EVENT_ACTION: ${{ github.event.inputs.action }}
@@ -55,6 +54,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
+          timeout: 30m
           envs: BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN
           script_stop: true
           script: |
