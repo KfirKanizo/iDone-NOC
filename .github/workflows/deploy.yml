@@ -24,74 +24,75 @@ jobs:
       contents: read
     
     steps:
-      # 1. המרת הסודות למחרוזת רציפה כדי למנוע שגיאות YAML או בעיית מירכאות
-      - name: Encode Secrets to Base64
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file locally
+        run: echo "$ENV_PRD" > .env
         env:
           ENV_PRD: ${{ secrets.ENV_PRD }}
-          DOCKER_COMPOSE_PRD: ${{ secrets.DOCKER_COMPOSE_PRD }}
-        run: |
-          echo "ENV_B64=$(printf '%s' "$ENV_PRD" | base64 -w 0)" >> $GITHUB_ENV
-          echo "DC_B64=$(printf '%s' "$DOCKER_COMPOSE_PRD" | base64 -w 0)" >> $GITHUB_ENV
 
-      # 2. התחברות והרצת הפקודות בשרת
-      - name: Execute via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          BRANCH: ${{ github.ref_name }}
-          EVENT_ACTION: ${{ github.event.inputs.action }}
-          EVENT_NAME: ${{ github.event_name }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ENV_B64: ${{ env.ENV_B64 }}
-          DC_B64: ${{ env.DC_B64 }}
+      - name: Copy .env to Server via SCP
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          # מעבירים את המשתנים המקודדים
-          envs: BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN,ENV_B64,DC_B64
+          source: ".env"
+          target: "/opt/stacks/iDone-NOC"
+
+      - name: Execute via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        timeout: 30m
+        env:
+          BRANCH: ${{ github.ref_name }}
+          EVENT_ACTION: ${{ github.event.inputs.action }}
+          EVENT_NAME: ${{ github.event_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          envs: BRANCH,EVENT_ACTION,EVENT_NAME,GITHUB_TOKEN
           script_stop: true
           script: |
-            set -x 
+            set -x
             export GIT_TERMINAL_PROMPT=0
-            
+
             PROJECT_DIR="/opt/stacks/iDone-NOC"
-            mkdir -p $PROJECT_DIR
-            cd $PROJECT_DIR
-            
+            mkdir -p "$PROJECT_DIR"
+            cd "$PROJECT_DIR"
+
             ACTION=$EVENT_ACTION
             if [ "$EVENT_NAME" == "push" ]; then
               ACTION="deploy"
             fi
-            
+
             if [ "$ACTION" == "stop" ]; then
-              docker compose down
+              docker compose -f docker-compose.prod.yml down
               exit 0
             fi
-            
+
             if [ "$ACTION" == "start" ]; then
-              docker compose up -d
+              docker compose -f docker-compose.prod.yml up -d
               exit 0
             fi
-            
+
             if [ "$ACTION" == "deploy" ]; then
               echo "Deploying new code from branch: $BRANCH..."
-              
+
               git init
               git remote remove origin 2>/dev/null || true
               git remote add origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
-              
+
               git fetch origin
               git reset --hard origin/$BRANCH
-              
-              echo "Decoding and generating configuration files..."
-              # פענוח הטקסט המקודד בחזרה לקבצים האמיתיים בשרת
-              echo "$ENV_B64" | base64 -d > .env
-              echo "$DC_B64" | base64 -d > docker-compose.yml
-              
-              docker compose down
-              docker compose up -d --build < /dev/null
+
+              docker compose -f docker-compose.prod.yml down
+              docker compose -f docker-compose.prod.yml up -d --build < /dev/null
               docker image prune -f
-              
+
               echo "Deployment completed successfully!"
             fi
